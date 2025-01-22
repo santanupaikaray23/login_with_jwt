@@ -87,7 +87,7 @@ router.post('/forgotpassword', async (req, res) => {
             },
         });
 
-        const resetLink = `http://localhost:4200/resetpassword?token=${resetToken}`;
+        const resetLink = `https://fastidious-lolly-a51f0f.netlify.app/resetpassword?token=${resetToken}`;
         const mailOptions = {
             from: 'santanupaikaray1996@gmail.com',
             to: email,
