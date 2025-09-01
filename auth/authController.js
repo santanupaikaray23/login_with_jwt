@@ -5,9 +5,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require ('bcryptjs');
 const config = require('../config');
 const User = require('./userSchema');
-// const nodemailer = require('nodemailer');
-
-// const RESET_PASSWORD_SECRET = 'secret_key';
 
 router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
