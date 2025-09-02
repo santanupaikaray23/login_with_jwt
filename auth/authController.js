@@ -9,6 +9,8 @@ const User = require('./userSchema');
 router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
 
+let tokenBlacklist = [];
+
 //get all users
 router.get('/users',(req,res)=>{
     User.find({},(err,data)=>{
@@ -66,6 +68,29 @@ router.get('/userInfo',(req,res) => {
 
 })
 
+router.post('/logout', (req, res) => {
+    const token = req.headers['x-access-token'] || req.body.token;
+    if (token) {
+        tokenBlacklist.push(token);
+    }
+    res.status(200).send({ auth: false, token: 'Logged out' });
+});
+
+// Middleware to check blacklist
+function verifyToken(req, res, next) {
+    const token = req.headers['x-access-token'];
+    if (!token) return res.status(403).send({ auth: false, token: 'No token provided.' });
+
+    if (tokenBlacklist.includes(token)) {
+        return res.status(401).send({ auth: false, token: 'Token is blacklisted. Please login again.' });
+    }
+
+    jwt.verify(token, config.secret, (err, decoded) => {
+        if (err) return res.status(500).send({ auth: false, token: 'Failed to authenticate token.' });
+        req.userId = decoded.id;
+        next();
+    });
+}
 
 
 module.exports = router
