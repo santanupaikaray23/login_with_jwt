@@ -40,7 +40,7 @@ router.post('/signup',(req,res)=>{
 //login user
 router.post('/login',(req,res)=>{
     User.findOne ({email:req.body.email},(err,user)=>{
-        if(err) return res.status(500).send('Error While Login')
+        if(err) return res.status(500).send({auth:false,token:'Error While Login'})
         if(!user) return res.status(500).send({auth:false,token:'No User Found! Register First'});
         else{
             const passIsValid = bcrypt.compareSync(req.body.password, user.password)
