@@ -18,6 +18,7 @@ router.get('/users',(req,res)=>{
         res.send(data)
     })
 })
+
 //register User
 router.post('/signup',(req,res)=>{
     var hashpassword = bcrypt.hashSync(req.body.password,8)
@@ -28,33 +29,34 @@ router.post('/signup',(req,res)=>{
         role:req.body.role?req.body.role:'User',
         phone:req.body.phone,
         city:req.body.city
-
     },(err,user) => {
         if(err) return res.status(500).send('Error')
         res.status(200).json({ message:'Signup Success'});
-       
-        
-
     })
 })
 //login user
-router.post('/login',(req,res)=>{
-    User.findOne ({email:req.body.email},(err,user)=>{
-        if(err) return res.status(500).send({auth:false,token:'Error While Login'})
-        if(!user) return res.status(500).send({auth:false,token:'No User Found! Register First'});
-        else{
-            const passIsValid = bcrypt.compareSync(req.body.password, user.password)
-         if (!passIsValid) return res.status(500).send({auth:false,token:'Invalid password'});
-         //in case password match generate token
-         var token = jwt.sign({id:user._id}, config.secert, {expiresIn:86400})
-         res.send({auth:true,token:token})
-
-        }
-
-
-    })
-})
-
+router.post('/login', (req, res) => {
+  User.findOne({ email: req.body.email }, (err, user) => {
+    if (err) return res.status(500).send({ auth: false, message: 'Error While Login' });
+    if (!user) return res.status(404).send({ auth: false, message: 'No User Found! Register First' });
+    const passIsValid = bcrypt.compareSync(req.body.password, user.password);
+    if (!passIsValid) return res.status(401).send({ auth: false, message: 'Invalid password' });
+    const token = jwt.sign(
+      { id: user._id, role: user.role }, 
+      config.secert,
+      { expiresIn: 86400 }
+    );
+    res.status(200).send({
+      auth: true,
+      token: token,
+      user: {
+        // id: user._id,
+        // email: user.email,
+        role: user.role
+      }
+    });
+  });
+});
 //profile
 router.get('/userInfo',(req,res) => {
     var token = req.headers ['x-access-token'];
@@ -65,9 +67,7 @@ router.get('/userInfo',(req,res) => {
             res.send(result)
         })
     })
-
 })
-
 router.post('/logout', (req, res) => {
     const token = req.headers['x-access-token'] || req.body.token;
     if (token) {
@@ -75,7 +75,6 @@ router.post('/logout', (req, res) => {
     }
     res.status(200).send({ auth: false, token: 'Logged out' });
 });
-
 // Middleware to check blacklist
 function verifyToken(req, res, next) {
     const token = req.headers['x-access-token'];
@@ -84,13 +83,10 @@ function verifyToken(req, res, next) {
     if (tokenBlacklist.includes(token)) {
         return res.status(401).send({ auth: false, token: 'Token is blacklisted. Please login again.' });
     }
-
-    jwt.verify(token, config.secret, (err, decoded) => {
+jwt.verify(token, config.secret, (err, decoded) => {
         if (err) return res.status(500).send({ auth: false, token: 'Failed to authenticate token.' });
         req.userId = decoded.id;
         next();
     });
 }
-
-
 module.exports = router
