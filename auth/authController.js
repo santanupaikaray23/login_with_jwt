@@ -10,7 +10,6 @@ router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
 
 let tokenBlacklist = [];
-
 //get all users
 router.get('/users',(req,res)=>{
     User.find({},(err,data)=>{
@@ -18,7 +17,6 @@ router.get('/users',(req,res)=>{
         res.send(data)
     })
 })
-
 //register User
 router.post('/signup',(req,res)=>{
     var hashpassword = bcrypt.hashSync(req.body.password,8)
@@ -30,7 +28,7 @@ router.post('/signup',(req,res)=>{
         phone:req.body.phone,
         city:req.body.city
     },(err,user) => {
-        if(err) return res.status(500).send('Error')
+        if(err) return res.status(500).send({message:'Signup failed. Please try again'})
         res.status(200).json({ message:'Signup Success'});
     })
 })
@@ -89,4 +87,5 @@ jwt.verify(token, config.secret, (err, decoded) => {
         next();
     });
 }
+
 module.exports = router
