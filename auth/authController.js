@@ -133,7 +133,6 @@ router.put('/updatevehicledetail', async (req, res) => {
           locationcity: req.body.locationcity,
           localpincode: req.body.localpincode,
           images: req.body.images,
-        
           isActive: true,
         },
       },
