@@ -8,5 +8,9 @@ var UserSchema = new mongoose.Schema({
     phone:Number,
     city:String
 })
-mongoose.model('users',UserSchema);
-module.exports = mongoose.model('users')
+
+
+
+mongoose.model('User',UserSchema);
+
+module.exports = mongoose.model('User')

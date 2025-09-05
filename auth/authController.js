@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require ('bcryptjs');
 const config = require('../config');
 const User = require('./userSchema');
+const Vehicledetail = require('./vehicleSchema')
+
 
 router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
@@ -73,7 +75,6 @@ router.post('/logout', (req, res) => {
     }
     res.status(200).send({ auth: false, token: 'Logged out' });
 });
-// Middleware to check blacklist
 function verifyToken(req, res, next) {
     const token = req.headers['x-access-token'];
     if (!token) return res.status(403).send({ auth: false, token: 'No token provided.' });
@@ -87,5 +88,83 @@ jwt.verify(token, config.secret, (err, decoded) => {
         next();
     });
 }
+// Read
+router.get('/vehicledetails',(req,res)=>{
+    Vehicledetail.find({},(err,data)=>{
+        if(err) throw err;
+        res.send(data)
+    })
+})
+// Insert
+router.post('/addvehicledetail', async (req, res) => {
+  try {
+    console.log("Request body:", req.body);
+
+    const vehicle = new Vehicledetail(req.body);
+    await vehicle.save();
+
+    res.status(201).send('Data Added');
+  } catch (err) {
+    console.error('Error adding vehicle:', err);
+    res.status(500).json({ error: err.message, details: err });
+  }
+});
+
+router.put('/updatevehicledetail', async (req, res) => {
+  try {
+    const id = req.body._id;
+
+    const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          sellerid: req.body.sellerid,
+          title: req.body.title,
+          make: req.body.make,
+          model: req.body.model,
+          variant: req.body.variant,
+          year: req.body.year,
+          fueltype: req.body.fueltype,
+          transmission: req.body.transmission,
+          ownercount: req.body.ownercount,
+          registrationstate: req.body.registrationstate,
+          price: req.body.price,
+          description: req.body.description,
+          locationcity: req.body.locationcity,
+          localpincode: req.body.localpincode,
+          images: req.body.images,
+        
+          isActive: true,
+        },
+      },
+      { new: true } 
+    );
+
+    if (!updatedVehicle) {
+      return res.status(404).send('No vehicle found with that ID');
+    }
+
+    res.send('Data Updated');
+  } catch (err) {
+    console.error('Error updating vehicle:', err);
+    res.status(500).send(err.message);
+  }
+});
+router.delete('/deletevehicledetail', async (req, res) => {
+  try {
+    const id = req.body._id;
+
+    const deletedVehicle = await Vehicledetail.findByIdAndDelete(id);
+
+    if (!deletedVehicle) {
+      return res.status(404).send('No vehicle found with that ID');
+    }
+
+    res.send('Data Deleted');
+  } catch (err) {
+    console.error('Error deleting vehicle:', err);
+    res.status(500).send(err.message);
+  }
+});
 
 module.exports = router
