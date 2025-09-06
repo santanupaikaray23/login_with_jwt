@@ -95,7 +95,7 @@ router.get('/vehicledetails',(req,res)=>{
         res.send(data)
     })
 })
-// Insert
+// Inserts
 router.post('/addvehicledetail', async (req, res) => {
   try {
     console.log("Request body:", req.body);
@@ -133,6 +133,7 @@ router.put('/updatevehicledetail', async (req, res) => {
           locationcity: req.body.locationcity,
           localpincode: req.body.localpincode,
           images: req.body.images,
+          mileage: req.body.mileage,
           isActive: true,
         },
       },
