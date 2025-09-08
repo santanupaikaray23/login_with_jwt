@@ -89,21 +89,65 @@ jwt.verify(token, config.secret, (err, decoded) => {
     });
 }
 // Read
-router.get('/vehicledetails',(req,res)=>{
-    Vehicledetail.find({},(err,data)=>{
-        if(err) throw err;
-        res.send(data)
-    })
-})
+router.get('/vehicledetails', async (req, res) => {
+  try {
+    let { 
+      page = 1, 
+      limit = 10,
+      search,
+      fueltype,
+      transmissions,
+      locationcity,
+      minPrice,
+      maxPrice,
+      minYear,
+      maxYear,
+      minMileage,
+      maxMileage
+    } = req.query;
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const skip = (page - 1) * limit;
+    const query = {};
+    if (search) {
+      query.$or = [
+        { make: new RegExp(search, 'i') },
+        { model: new RegExp(search, 'i') },
+        { title: new RegExp(search, 'i') },
+        { description: new RegExp(search, 'i') }
+      ];
+    }
+    if (fueltype) query.fueltype = fueltype;
+    if (transmissions) query.transmission = transmissions;
+    if (locationcity) query.locationcity = locationcity;
+    if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
+    if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
+    if (minYear) query.year = { ...query.year, $gte: Number(minYear) };
+    if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
+    if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
+    if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
+    const [data, total] = await Promise.all([
+      Vehicledetail.find(query).skip(skip).limit(limit),
+      Vehicledetail.countDocuments(query)
+    ]);
+    res.json({
+      data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
 // Inserts
 router.post('/addvehicledetail', async (req, res) => {
   try {
     console.log("Request body:", req.body);
-
     const vehicle = new Vehicledetail(req.body);
     await vehicle.save();
-
-    res.status(201).send('Data Added');
+ res.status(201).send('Data Added');
   } catch (err) {
     console.error('Error adding vehicle:', err);
     res.status(500).json({ error: err.message, details: err });
@@ -113,7 +157,6 @@ router.post('/addvehicledetail', async (req, res) => {
 router.put('/updatevehicledetail', async (req, res) => {
   try {
     const id = req.body._id;
-
     const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
       id,
       {
@@ -139,12 +182,10 @@ router.put('/updatevehicledetail', async (req, res) => {
       },
       { new: true } 
     );
-
     if (!updatedVehicle) {
       return res.status(404).send('No vehicle found with that ID');
     }
-
-    res.send('Data Updated');
+  res.send('Data Updated');
   } catch (err) {
     console.error('Error updating vehicle:', err);
     res.status(500).send(err.message);
@@ -153,13 +194,10 @@ router.put('/updatevehicledetail', async (req, res) => {
 router.delete('/deletevehicledetail', async (req, res) => {
   try {
     const id = req.body._id;
-
     const deletedVehicle = await Vehicledetail.findByIdAndDelete(id);
-
     if (!deletedVehicle) {
       return res.status(404).send('No vehicle found with that ID');
     }
-
     res.send('Data Deleted');
   } catch (err) {
     console.error('Error deleting vehicle:', err);

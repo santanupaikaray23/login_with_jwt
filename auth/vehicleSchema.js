@@ -1,6 +1,5 @@
 var mongoose = require ('mongoose');
 
-
 var VehicleSchema = new mongoose.Schema({
     id:Number,
     sellerid:Number,
@@ -25,6 +24,5 @@ var VehicleSchema = new mongoose.Schema({
 })
 
 const Vehicledetail = mongoose.model('vehicledetail',VehicleSchema);
-
 
 module.exports = Vehicledetail;
