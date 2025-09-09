@@ -12,21 +12,19 @@ router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
 
 let tokenBlacklist = [];
-//get all users
 router.get('/users',(req,res)=>{
     User.find({},(err,data)=>{
         if(err) throw err;
         res.send(data)
     })
 })
-//register User
 router.post('/signup',(req,res)=>{
     var hashpassword = bcrypt.hashSync(req.body.password,8)
     User.create({
         name:req.body.name,
         password:hashpassword,
         email:req.body.email,
-        role:req.body.role?req.body.role:'User',
+        role:req.body.role?req.body.role:'Admin',
         phone:req.body.phone,
         city:req.body.city
     },(err,user) => {
@@ -34,7 +32,6 @@ router.post('/signup',(req,res)=>{
         res.status(200).json({ message:'Signup Success'});
     })
 })
-//login user
 router.post('/login', (req, res) => {
   User.findOne({ email: req.body.email }, (err, user) => {
     if (err) return res.status(500).send({ auth: false, message: 'Error While Login' });
@@ -57,7 +54,6 @@ router.post('/login', (req, res) => {
     });
   });
 });
-//profile
 router.get('/userInfo',(req,res) => {
     var token = req.headers ['x-access-token'];
     if(!token) return res.send({auth:false,token:'No Token Provided'});
@@ -89,7 +85,7 @@ jwt.verify(token, config.secret, (err, decoded) => {
     });
 }
 // Read
-router.get('/vehicledetails', async (req, res) => {
+router.get('/vehicledetails', async (req, res) => { 
   try {
     let { 
       page = 1, 
@@ -103,7 +99,8 @@ router.get('/vehicledetails', async (req, res) => {
       minYear,
       maxYear,
       minMileage,
-      maxMileage
+      maxMileage,
+      sort 
     } = req.query;
     page = parseInt(page);
     limit = parseInt(limit);
@@ -126,16 +123,79 @@ router.get('/vehicledetails', async (req, res) => {
     if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
     if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
     if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
-    const [data, total] = await Promise.all([
-      Vehicledetail.find(query).skip(skip).limit(limit),
-      Vehicledetail.countDocuments(query)
-    ]);
+    let sortOption = {};
+    switch (sort) {
+      case "newest":
+        sortOption = { createdAt: -1 }; 
+        break;
+      case "price_low":
+        sortOption = { price: 1 };
+        break;
+      case "price_high":
+        sortOption = { price: -1 };
+        break;
+      case "year":
+        sortOption = { year: -1 };
+        break;
+      default:
+        sortOption = {}; 
+    }
+
+const [data, total] = await Promise.all([
+  Vehicledetail.find(query)
+    .sort(sortOption)
+    .skip(skip)
+    .limit(limit),
+  Vehicledetail.countDocuments(query) 
+]);
     res.json({
       data,
       total,
       page,
       totalPages: Math.ceil(total / limit)
     });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+router.get('/vehicledetails/total', async (req, res) => {
+  try {
+    let { 
+      search,
+      fueltype,
+      transmissions,
+      locationcity,
+      minPrice,
+      maxPrice,
+      minYear,
+      maxYear,
+      minMileage,
+      maxMileage
+    } = req.query;
+    const query = {};
+    if (search) {
+      query.$or = [
+        { make: new RegExp(search, 'i') },
+        { model: new RegExp(search, 'i') },
+        { title: new RegExp(search, 'i') },
+        { description: new RegExp(search, 'i') }
+      ];
+    }
+    if (fueltype) query.fueltype = fueltype;
+    if (transmissions) query.transmission = transmissions;
+    if (locationcity) query.locationcity = locationcity;
+    if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
+    if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
+    if (minYear) query.year = { ...query.year, $gte: Number(minYear) };
+    if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
+    if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
+    if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
+
+    const total = await Vehicledetail.countDocuments(query);
+
+    res.json({ total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
