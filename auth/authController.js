@@ -8,6 +8,7 @@ const User = require('./userSchema');
 const Vehicledetail = require('./vehicleSchema')
 
 
+
 router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
 
@@ -85,7 +86,7 @@ jwt.verify(token, config.secret, (err, decoded) => {
     });
 }
 // Read
-router.get('/vehicledetails', async (req, res) => { 
+router.get('/vehicledetails', async (req, res) => {
   try {
     let { 
       page = 1, 
@@ -102,9 +103,15 @@ router.get('/vehicledetails', async (req, res) => {
       maxMileage,
       sort 
     } = req.query;
+
     page = parseInt(page);
     limit = parseInt(limit);
+
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
+
     const skip = (page - 1) * limit;
+
     const query = {};
     if (search) {
       query.$or = [
@@ -123,6 +130,7 @@ router.get('/vehicledetails', async (req, res) => {
     if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
     if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
     if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
+
     let sortOption = {};
     switch (sort) {
       case "newest":
@@ -141,19 +149,22 @@ router.get('/vehicledetails', async (req, res) => {
         sortOption = {}; 
     }
 
-const [data, total] = await Promise.all([
-  Vehicledetail.find(query)
-    .sort(sortOption)
-    .skip(skip)
-    .limit(limit),
-  Vehicledetail.countDocuments(query) 
-]);
+    const [data, total] = await Promise.all([
+      Vehicledetail.find(query)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit),
+      Vehicledetail.countDocuments(query) 
+    ]);
+
     res.json({
       data,
       total,
       page,
+      limit,
       totalPages: Math.ceil(total / limit)
     });
+
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
