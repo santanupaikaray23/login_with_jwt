@@ -27,7 +27,9 @@ router.post('/signup',(req,res)=>{
         email:req.body.email,
         role:req.body.role?req.body.role:'Admin',
         phone:req.body.phone,
-        city:req.body.city
+        city:req.body.city,
+        is_blocked: false
+
     },(err,user) => {
         if(err) return res.status(500).send({message:'Signup failed. Please try again'})
         res.status(200).json({ message:'Signup Success'});

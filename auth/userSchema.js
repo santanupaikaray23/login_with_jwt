@@ -6,7 +6,9 @@ var UserSchema = new mongoose.Schema({
     password:String,
     role:String,
     phone:Number,
-    city:String
+    city:String,
+    is_blocked: { type: Boolean, default: false }
+  
 })
 
 mongoose.model('User',UserSchema);

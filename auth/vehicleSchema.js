@@ -19,7 +19,8 @@ var VehicleSchema = new mongoose.Schema({
     images:String,
     status:String,
     statushistory:String,
-    mileage:Number
+    mileage:Number,
+     
 
 })
 
