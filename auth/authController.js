@@ -227,50 +227,83 @@ router.post('/addvehicledetail', async (req, res) => {
   }
 });
 
-router.put('/updatevehicledetail', async (req, res) => {
+// router.put('/updatevehicledetail', async (req, res) => {
+//   try {
+//     const id = req.body._id;
+//     const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+//       id,
+//       {
+//         $set: {
+//           sellerid: req.body.sellerid,
+//           title: req.body.title,
+//           make: req.body.make,
+//           model: req.body.model,
+//           variant: req.body.variant,
+//           year: req.body.year,
+//           fueltype: req.body.fueltype,
+//           transmission: req.body.transmission,
+//           ownercount: req.body.ownercount,
+//           registrationstate: req.body.registrationstate,
+//           price: req.body.price,
+//           description: req.body.description,
+//           locationcity: req.body.locationcity,
+//           localpincode: req.body.localpincode,
+//           images: req.body.images,
+//           mileage: req.body.mileage,
+//           isActive: true,
+//         },
+//       },
+//       { new: true } 
+//     );
+//     if (!updatedVehicle) {
+//       return res.status(404).send('No vehicle found with that ID');
+//     }
+//   res.send('Data Updated');
+//   } catch (err) {
+//     console.error('Error updating vehicle:', err);
+//     res.status(500).send(err.message);
+//   }
+// });
+
+router.put('/updatevehicledetail/:id', async (req, res) => {
   try {
-    const id = req.body._id;
-    const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          sellerid: req.body.sellerid,
-          title: req.body.title,
-          make: req.body.make,
-          model: req.body.model,
-          variant: req.body.variant,
-          year: req.body.year,
-          fueltype: req.body.fueltype,
-          transmission: req.body.transmission,
-          ownercount: req.body.ownercount,
-          registrationstate: req.body.registrationstate,
-          price: req.body.price,
-          description: req.body.description,
-          locationcity: req.body.locationcity,
-          localpincode: req.body.localpincode,
-          images: req.body.images,
-          mileage: req.body.mileage,
-          isActive: true,
-        },
-      },
-      { new: true } 
-    );
+    const id = req.params.id;
+    const updatedVehicle = await Vehicledetail.findByIdAndUpdate(id, req.body, { new: true });
+
     if (!updatedVehicle) {
       return res.status(404).send('No vehicle found with that ID');
     }
-  res.send('Data Updated');
+
+    res.send(updatedVehicle);
   } catch (err) {
     console.error('Error updating vehicle:', err);
     res.status(500).send(err.message);
   }
 });
-router.delete('/deletevehicledetail', async (req, res) => {
+
+// router.delete('/deletevehicledetail', async (req, res) => {
+//   try {
+//     const id = req.body._id;
+//     const deletedVehicle = await Vehicledetail.findByIdAndDelete(id);
+//     if (!deletedVehicle) {
+//       return res.status(404).send('No vehicle found with that ID');
+//     }
+//     res.send('Data Deleted');
+//   } catch (err) {
+//     console.error('Error deleting vehicle:', err);
+//     res.status(500).send(err.message);
+//   }
+// });
+
+router.delete('/deletevehicledetail/:id', async (req, res) => {
   try {
-    const id = req.body._id;
+    const id = req.params.id;
     const deletedVehicle = await Vehicledetail.findByIdAndDelete(id);
+
     if (!deletedVehicle) {
       return res.status(404).send('No vehicle found with that ID');
     }
+
     res.send('Data Deleted');
   } catch (err) {
     console.error('Error deleting vehicle:', err);
