@@ -7,8 +7,10 @@ const config = require('../config');
 const User = require('./userSchema');
 const Vehicledetail = require('./vehicleSchema')
 
+const multer = require("multer");
 
-
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
 
@@ -215,17 +217,17 @@ router.get('/vehicledetails/total', async (req, res) => {
   }
 });
 // Inserts
-router.post('/addvehicledetail', async (req, res) => {
-  try {
-    console.log("Request body:", req.body);
-    const vehicle = new Vehicledetail(req.body);
-    await vehicle.save();
- res.status(201).send('Data Added');
-  } catch (err) {
-    console.error('Error adding vehicle:', err);
-    res.status(500).json({ error: err.message, details: err });
-  }
-});
+// router.post('/addvehicledetail', async (req, res) => {
+//   try {
+//     console.log("Request body:", req.body);
+//     const vehicle = new Vehicledetail(req.body);
+//     await vehicle.save();
+//  res.status(201).send('Data Added');
+//   } catch (err) {
+//     console.error('Error adding vehicle:', err);
+//     res.status(500).json({ error: err.message, details: err });
+//   }
+// });
 
 // router.put('/updatevehicledetail', async (req, res) => {
 //   try {
@@ -265,6 +267,126 @@ router.post('/addvehicledetail', async (req, res) => {
 //   }
 // });
 
+router.post(
+  "/addvehicledetail",
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      console.log("Body fields:", req.body);
+      console.log("Files:", req.files);
+
+      // --- SERVER-SIDE VALIDATION ---
+      const requiredFields = [
+        "title",
+        "make",
+        "model",
+        "variant",
+        "year",
+        "fueltype",
+        "transmission",
+        "ownercount",
+        "registrationstate",
+        "price",
+        "description",
+        "locationcity",
+        "localpincode",
+        "status",
+        "statushistory",
+      ];
+
+      // Check missing fields
+      for (const field of requiredFields) {
+        if (!req.body[field] || req.body[field].toString().trim() === "") {
+          return res
+            .status(400)
+            .json({ success: false, error: `${field} is required.` });
+        }
+      }
+
+      // Validate year
+      const year = parseInt(req.body.year, 10);
+      if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid year provided." });
+      }
+
+      // Validate price
+      const price = parseFloat(req.body.price);
+      if (isNaN(price) || price <= 0) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Price must be a positive number." });
+      }
+
+      // Validate owner count
+      const ownercount = parseInt(req.body.ownercount, 10);
+      if (isNaN(ownercount) || ownercount <= 0) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Owner count must be greater than 0." });
+      }
+
+      // Validate pincode (6 digits)
+      const pincodePattern = /^[0-9]{6}$/;
+      if (!pincodePattern.test(req.body.localpincode)) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Pincode must be exactly 6 digits." });
+      }
+
+      // Validate fuel type
+      const validFuelTypes = ["Petrol", "Diesel", "Electric"];
+      if (!validFuelTypes.includes(req.body.fueltype)) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid fuel type." });
+      }
+
+      // Validate transmission
+      const validTransmissions = ["Automatic", "Manual", "Electric"];
+      if (!validTransmissions.includes(req.body.transmission)) {
+        return res
+          .status(400)
+          .json({ success: false, error: "Invalid transmission type." });
+      }
+
+      // Build the object for MongoDB
+      const vehicleData = {
+        title: req.body.title.trim(),
+        make: req.body.make.trim(),
+        model: req.body.model.trim(),
+        variant: req.body.variant,
+        year,
+        fueltype: req.body.fueltype,
+        transmission: req.body.transmission,
+        ownercount,
+        registrationstate: req.body.registrationstate,
+        price,
+        description: req.body.description,
+        locationcity: req.body.locationcity,
+        localpincode: req.body.localpincode,
+        status: req.body.status,
+        statushistory: req.body.statushistory,
+        images: req.files.map(f => ({
+          filename: f.originalname,
+          mimetype: f.mimetype,
+          data: f.buffer.toString("base64"),
+        })),
+      };
+
+      // Save to DB using mongoose
+      const vehicle = new Vehicledetail(vehicleData);
+      await vehicle.save();
+
+      res.status(201).json({ success: true, vehicle });
+    } catch (err) {
+      console.error("Error saving vehicle:", err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  }
+);
+
 router.put('/updatevehicledetail/:id', async (req, res) => {
   try {
     const id = req.params.id;
@@ -281,19 +403,19 @@ router.put('/updatevehicledetail/:id', async (req, res) => {
   }
 });
 
-// router.delete('/deletevehicledetail', async (req, res) => {
-//   try {
-//     const id = req.body._id;
-//     const deletedVehicle = await Vehicledetail.findByIdAndDelete(id);
-//     if (!deletedVehicle) {
-//       return res.status(404).send('No vehicle found with that ID');
-//     }
-//     res.send('Data Deleted');
-//   } catch (err) {
-//     console.error('Error deleting vehicle:', err);
-//     res.status(500).send(err.message);
-//   }
-// });
+router.delete('/deletevehicledetail', async (req, res) => {
+  try {
+    const id = req.body._id;
+    const deletedVehicle = await Vehicledetail.findByIdAndDelete(id);
+    if (!deletedVehicle) {
+      return res.status(404).send('No vehicle found with that ID');
+    }
+    res.send('Data Deleted');
+  } catch (err) {
+    console.error('Error deleting vehicle:', err);
+    res.status(500).send(err.message);
+  }
+});
 
 router.delete('/deletevehicledetail/:id', async (req, res) => {
   try {

@@ -16,11 +16,16 @@ var VehicleSchema = new mongoose.Schema({
     description:String,
     locationcity:String,
     localpincode:Number,
-    images:String,
     status:String,
     statushistory:String,
     mileage:Number,
-     
+     images: [
+    {
+      filename: String,
+      mimetype: String,
+      data: String, // base64 string
+    },
+  ],
 
 })
 
