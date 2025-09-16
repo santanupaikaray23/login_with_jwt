@@ -10,7 +10,8 @@ const Vehicledetail = require('./vehicleSchema')
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
+
 router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
 
@@ -30,7 +31,10 @@ router.post('/signup',(req,res)=>{
         role:req.body.role?req.body.role:'Admin',
         phone:req.body.phone,
         city:req.body.city,
-        is_blocked: false
+        is_blocked: false,
+        created_at:req.body.created_at,
+        updated_at:req.body.updated_at
+
 
     },(err,user) => {
         if(err) return res.status(500).send({message:'Signup failed. Please try again'})
@@ -275,7 +279,6 @@ router.post(
       console.log("Body fields:", req.body);
       console.log("Files:", req.files);
 
-      // --- SERVER-SIDE VALIDATION ---
       const requiredFields = [
         "title",
         "make",
@@ -294,7 +297,6 @@ router.post(
         "statushistory",
       ];
 
-      // Check missing fields
       for (const field of requiredFields) {
         if (!req.body[field] || req.body[field].toString().trim() === "") {
           return res
@@ -303,7 +305,6 @@ router.post(
         }
       }
 
-      // Validate year
       const year = parseInt(req.body.year, 10);
       if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
         return res
@@ -311,7 +312,6 @@ router.post(
           .json({ success: false, error: "Invalid year provided." });
       }
 
-      // Validate price
       const price = parseFloat(req.body.price);
       if (isNaN(price) || price <= 0) {
         return res
@@ -319,7 +319,6 @@ router.post(
           .json({ success: false, error: "Price must be a positive number." });
       }
 
-      // Validate owner count
       const ownercount = parseInt(req.body.ownercount, 10);
       if (isNaN(ownercount) || ownercount <= 0) {
         return res
@@ -327,7 +326,7 @@ router.post(
           .json({ success: false, error: "Owner count must be greater than 0." });
       }
 
-      // Validate pincode (6 digits)
+
       const pincodePattern = /^[0-9]{6}$/;
       if (!pincodePattern.test(req.body.localpincode)) {
         return res
@@ -387,21 +386,55 @@ router.post(
   }
 );
 
-router.put('/updatevehicledetail/:id', async (req, res) => {
+router.put("/updatevehicledetail/:id", upload.array("images", 5), async (req, res) => {
   try {
     const id = req.params.id;
-    const updatedVehicle = await Vehicledetail.findByIdAndUpdate(id, req.body, { new: true });
 
-    if (!updatedVehicle) {
-      return res.status(404).send('No vehicle found with that ID');
+    // req.body contains form fields
+    const vehicleData = {
+      title: req.body.title,
+      make: req.body.make,
+      model: req.body.model,
+      variant: req.body.variant,
+      year: req.body.year,
+      fueltype: req.body.fueltype,
+      transmission: req.body.transmission,
+      ownercount: req.body.ownercount,
+      registrationstate: req.body.registrationstate,
+      price: req.body.price,
+      description: req.body.description,
+      locationcity: req.body.locationcity,
+      localpincode: req.body.localpincode,
+      status: req.body.status,
+      statushistory: req.body.statushistory,
+    };
+
+    // handle new images if uploaded
+    if (req.files && req.files.length > 0) {
+      vehicleData.images = req.files.map((file) => ({
+        data: file.buffer.toString("base64"),
+        mimetype: file.mimetype,
+        filename: file.originalname,
+      }));
     }
 
-    res.send(updatedVehicle);
+    const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+      id,
+      { $set: vehicleData },
+      { new: true }
+    );
+
+    if (!updatedVehicle) {
+      return res.status(404).send("No vehicle found with that ID");
+    }
+
+    res.json(updatedVehicle);
   } catch (err) {
-    console.error('Error updating vehicle:', err);
+    console.error("Error updating vehicle:", err);
     res.status(500).send(err.message);
   }
 });
+
 
 router.delete('/deletevehicledetail', async (req, res) => {
   try {
