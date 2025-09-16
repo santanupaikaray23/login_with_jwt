@@ -386,54 +386,64 @@ router.post(
   }
 );
 
-router.put("/updatevehicledetail/:id", upload.array("images", 5), async (req, res) => {
-  try {
-    const id = req.params.id;
+router.put(
+  "/updatevehicledetail/:id",
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
 
-    // req.body contains form fields
-    const vehicleData = {
-      title: req.body.title,
-      make: req.body.make,
-      model: req.body.model,
-      variant: req.body.variant,
-      year: req.body.year,
-      fueltype: req.body.fueltype,
-      transmission: req.body.transmission,
-      ownercount: req.body.ownercount,
-      registrationstate: req.body.registrationstate,
-      price: req.body.price,
-      description: req.body.description,
-      locationcity: req.body.locationcity,
-      localpincode: req.body.localpincode,
-      status: req.body.status,
-      statushistory: req.body.statushistory,
-    };
+      // Fetch existing vehicle first
+      const existingVehicle = await Vehicledetail.findById(id);
+      if (!existingVehicle) {
+        return res.status(404).send("No vehicle found with that ID");
+      }
 
-    // handle new images if uploaded
-    if (req.files && req.files.length > 0) {
-      vehicleData.images = req.files.map((file) => ({
-        data: file.buffer.toString("base64"),
-        mimetype: file.mimetype,
-        filename: file.originalname,
-      }));
+      // Prepare base data
+      const vehicleData = {
+        title: req.body.title,
+        make: req.body.make,
+        model: req.body.model,
+        variant: req.body.variant,
+        year: req.body.year,
+        fueltype: req.body.fueltype,
+        transmission: req.body.transmission,
+        ownercount: req.body.ownercount,
+        registrationstate: req.body.registrationstate,
+        price: req.body.price,
+        description: req.body.description,
+        locationcity: req.body.locationcity,
+        localpincode: req.body.localpincode,
+        status: req.body.status,
+        statushistory: req.body.statushistory,
+      images: Array.isArray(req.body.images) ? req.body.images : []
+      };
+
+      // If new files uploaded, add them
+      if (req.files && req.files.length > 0) {
+        const newImages = req.files.map((file) => ({
+          data: file.buffer.toString("base64"),
+          mimetype: file.mimetype,
+          filename: file.originalname,
+        }));
+
+        vehicleData.images = [...vehicleData.images, ...newImages];
+      }
+
+      // Update with merged images
+      const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+        id,
+        { $set: vehicleData },
+        { new: true }
+      );
+
+      res.json(updatedVehicle);
+    } catch (err) {
+      console.error("Error updating vehicle:", err);
+      res.status(500).send(err.message);
     }
-
-    const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
-      id,
-      { $set: vehicleData },
-      { new: true }
-    );
-
-    if (!updatedVehicle) {
-      return res.status(404).send("No vehicle found with that ID");
-    }
-
-    res.json(updatedVehicle);
-  } catch (err) {
-    console.error("Error updating vehicle:", err);
-    res.status(500).send(err.message);
   }
-});
+);
 
 
 router.delete('/deletevehicledetail', async (req, res) => {
