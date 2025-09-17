@@ -5,7 +5,8 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require ('bcryptjs');
 const config = require('../config');
 const User = require('./userSchema');
-const Vehicledetail = require('./vehicleSchema')
+const Vehicledetail = require('./vehicleSchema');
+const adminAuditSchema = require('./adminAuditSchema')
 
 const multer = require("multer");
 
@@ -36,7 +37,7 @@ router.post('/signup',(req,res)=>{
         updated_at:req.body.updated_at
 
 
-    },(err,user) => {
+    },(err) => {
         if(err) return res.status(500).send({message:'Signup failed. Please try again'})
         res.status(200).json({ message:'Signup Success'});
     })
@@ -95,6 +96,8 @@ jwt.verify(token, config.secret, (err, decoded) => {
 }
 // Read
 router.get('/vehicledetails', async (req, res) => {
+  var query = {}
+  query = {isActive:true}
   try {
     let { 
       page = 1, 
@@ -118,26 +121,27 @@ router.get('/vehicledetails', async (req, res) => {
     if (isNaN(page) || page < 1) page = 1;
     if (isNaN(limit) || limit < 1) limit = 10;
 
-    const skip = (page - 1) * limit;
+const skip = (page - 1) * limit;
 
-    const query = {};
-    if (search) {
-      query.$or = [
-        { make: new RegExp(search, 'i') },
-        { model: new RegExp(search, 'i') },
-        { title: new RegExp(search, 'i') },
-        { description: new RegExp(search, 'i') }
-      ];
-    }
-    if (fueltype) query.fueltype = fueltype;
-    if (transmissions) query.transmission = transmissions;
-    if (locationcity) query.locationcity = locationcity;
-    if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
-    if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
-    if (minYear) query.year = { ...query.year, $gte: Number(minYear) };
-    if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
-    if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
-    if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
+    let query = { isActive: true }; 
+
+if (search) {
+  query.$or = [
+    { make: new RegExp(search, 'i') },
+    { model: new RegExp(search, 'i') },
+    { title: new RegExp(search, 'i') },
+    { description: new RegExp(search, 'i') }
+  ];
+}
+if (fueltype) query.fueltype = fueltype;
+if (transmissions) query.transmission = transmissions;
+if (locationcity) query.locationcity = locationcity;
+if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
+if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
+if (minYear) query.year = { ...query.year, $gte: Number(minYear) };
+if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
+if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
+if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
 
     let sortOption = {};
     switch (sort) {
@@ -178,6 +182,92 @@ router.get('/vehicledetails', async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+// router.get('/vehicledetails', async (req, res) => {
+//   try {
+//     let { 
+//       page = 1, 
+//       limit = 10,
+//       search,
+//       fueltype,
+//       transmissions,
+//       locationcity,
+//       minPrice,
+//       maxPrice,
+//       minYear,
+//       maxYear,
+//       minMileage,
+//       maxMileage,
+//       sort 
+//     } = req.query;
+
+//     page = parseInt(page);
+//     limit = parseInt(limit);
+
+//     if (isNaN(page) || page < 1) page = 1;
+//     if (isNaN(limit) || limit < 1) limit = 10;
+
+//     const skip = (page - 1) * limit;
+
+//     // Always enforce isActive = true
+//     const query = { isActive: true };
+
+//     if (search) {
+//       query.$or = [
+//         { make: new RegExp(search, 'i') },
+//         { model: new RegExp(search, 'i') },
+//         { title: new RegExp(search, 'i') },
+//         { description: new RegExp(search, 'i') }
+//       ];
+//     }
+//     if (fueltype) query.fueltype = fueltype;
+//     if (transmissions) query.transmission = transmissions;
+//     if (locationcity) query.locationcity = locationcity;
+//     if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
+//     if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
+//     if (minYear) query.year = { ...query.year, $gte: Number(minYear) };
+//     if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
+//     if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
+//     if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
+
+//     let sortOption = {};
+//     switch (sort) {
+//       case "newest":
+//         sortOption = { createdAt: -1 }; 
+//         break;
+//       case "price_low":
+//         sortOption = { price: 1 };
+//         break;
+//       case "price_high":
+//         sortOption = { price: -1 };
+//         break;
+//       case "year":
+//         sortOption = { year: -1 };
+//         break;
+//       default:
+//         sortOption = {}; 
+//     }
+
+//     const [data, total] = await Promise.all([
+//       Vehicledetail.find(query)
+//         .sort(sortOption)
+//         .skip(skip)
+//         .limit(limit),
+//       Vehicledetail.countDocuments(query) 
+//     ]);
+
+//     res.json({
+//       data,
+//       total,
+//       page,
+//       limit,
+//       totalPages: Math.ceil(total / limit)
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
 
 router.get('/vehicledetails/total', async (req, res) => {
   try {
@@ -295,6 +385,7 @@ router.post(
         "localpincode",
         "status",
         "statushistory",
+        "isActive"
       ];
 
       for (const field of requiredFields) {
@@ -367,6 +458,7 @@ router.post(
         localpincode: req.body.localpincode,
         status: req.body.status,
         statushistory: req.body.statushistory,
+        isActive: req.body.isActive,
         images: req.files.map(f => ({
           filename: f.originalname,
           mimetype: f.mimetype,
@@ -392,14 +484,12 @@ router.put(
   async (req, res) => {
     try {
       const id = req.params.id;
-
-      // Fetch existing vehicle first
       const existingVehicle = await Vehicledetail.findById(id);
       if (!existingVehicle) {
         return res.status(404).send("No vehicle found with that ID");
       }
 
-      // Prepare base data
+      // Build update object (excluding images first)
       const vehicleData = {
         title: req.body.title,
         make: req.body.make,
@@ -416,21 +506,32 @@ router.put(
         localpincode: req.body.localpincode,
         status: req.body.status,
         statushistory: req.body.statushistory,
-      images: Array.isArray(req.body.images) ? req.body.images : []
+        isActive: true
       };
 
-      // If new files uploaded, add them
-      if (req.files && req.files.length > 0) {
-        const newImages = req.files.map((file) => ({
-          data: file.buffer.toString("base64"),
-          mimetype: file.mimetype,
-          filename: file.originalname,
-        }));
+      let updatedImages = existingVehicle.images || [];
 
-        vehicleData.images = [...vehicleData.images, ...newImages];
+      if (req.files && req.files.length > 0) {
+        // frontend will send imageIndexes[] aligned with files[]
+        const indexes = req.body.imageIndexes
+          ? JSON.parse(req.body.imageIndexes)
+          : [];
+
+        req.files.forEach((file, i) => {
+          const slotIndex = indexes[i]; // which slot to replace
+          const newImage = {
+            data: file.buffer.toString("base64"),
+            mimetype: file.mimetype,
+            filename: file.originalname,
+          };
+          if (typeof slotIndex === "number") {
+            updatedImages[slotIndex] = newImage;
+          }
+        });
+
+        vehicleData.images = updatedImages;
       }
 
-      // Update with merged images
       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
         id,
         { $set: vehicleData },
@@ -445,6 +546,91 @@ router.put(
   }
 );
 
+router.put(
+  "/deactivatevehicledetail/:id",
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const existingVehicle = await Vehicledetail.findById(id);
+
+      if (!existingVehicle) {
+        return res.status(404).send("No vehicle found with that ID");
+      }
+
+      // Always set isActive to false
+      const vehicleData = {  
+        isActive: false,
+        images: existingVehicle.images || []  // initialize with existing images
+      };
+
+      // If new files are uploaded, add them
+      if (req.files && req.files.length > 0) {
+        const newImages = req.files.map((file) => ({
+          data: file.buffer.toString("base64"),
+          mimetype: file.mimetype,
+          filename: file.originalname,
+        }));
+        vehicleData.images = [...vehicleData.images, ...newImages];
+      }
+
+      // Update vehicle details
+      const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+        id,
+        { $set: vehicleData },
+        { new: true }
+      );
+
+      res.json(updatedVehicle);
+    } catch (err) {
+      console.error("Error updating vehicle:", err);
+      res.status(500).send(err.message);
+    }
+  }
+);
+
+router.put(
+  "/activatevehicledetail/:id",
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const existingVehicle = await Vehicledetail.findById(id);
+
+      if (!existingVehicle) {
+        return res.status(404).send("No vehicle found with that ID");
+      }
+
+      // Always set isActive to true
+      const vehicleData = {  
+        isActive: true,
+        images: existingVehicle.images || [] // keep old images
+      };
+
+      // If new files are uploaded, add them
+      if (req.files && req.files.length > 0) {
+        const newImages = req.files.map((file) => ({
+          data: file.buffer.toString("base64"),
+          mimetype: file.mimetype,
+          filename: file.originalname,
+        }));
+        vehicleData.images = [...vehicleData.images, ...newImages];
+      }
+
+      // Update vehicle details
+      const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+        id,
+        { $set: vehicleData },
+        { new: true }
+      );
+
+      res.json(updatedVehicle);
+    } catch (err) {
+      console.error("Error updating vehicle:", err);
+      res.status(500).send(err.message);
+    }
+  }
+);
 
 router.delete('/deletevehicledetail', async (req, res) => {
   try {

@@ -19,6 +19,7 @@ var VehicleSchema = new mongoose.Schema({
     status:String,
     statushistory:String,
     mileage:Number,
+    isActive:Boolean,
      images: [
     {
       filename: String,
@@ -26,6 +27,7 @@ var VehicleSchema = new mongoose.Schema({
       data: String, // base64 string
     },
   ],
+
 
 })
 
