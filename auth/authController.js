@@ -94,10 +94,10 @@ jwt.verify(token, config.secret, (err, decoded) => {
         next();
     });
 }
-// Read
-router.get('/vehicledetails', async (req, res) => {
+
+router.get('/vehicledetailsbuyer', async (req, res) => {
   var query = {}
-  query = {isActive:true}
+  query = {isActive:false}
   try {
     let { 
       page = 1, 
@@ -123,7 +123,95 @@ router.get('/vehicledetails', async (req, res) => {
 
 const skip = (page - 1) * limit;
 
-    let query = { isActive: true }; 
+    let query = { isActive: false }; 
+
+if (search) {
+  query.$or = [
+    { make: new RegExp(search, 'i') },
+    { model: new RegExp(search, 'i') },
+    { title: new RegExp(search, 'i') },
+    { description: new RegExp(search, 'i') }
+  ];
+}
+if (fueltype) query.fueltype = fueltype;
+if (transmissions) query.transmission = transmissions;
+if (locationcity) query.locationcity = locationcity;
+if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
+if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
+if (minYear) query.year = { ...query.year, $gte: Number(minYear) };
+if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
+if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
+if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
+
+    let sortOption = {};
+    switch (sort) {
+      case "newest":
+        sortOption = { createdAt: -1 }; 
+        break;
+      case "price_low":
+        sortOption = { price: 1 };
+        break;
+      case "price_high":
+        sortOption = { price: -1 };
+        break;
+      case "year":
+        sortOption = { year: -1 };
+        break;
+      default:
+        sortOption = {}; 
+    }
+
+    const [data, total] = await Promise.all([
+      Vehicledetail.find(query)
+        .sort(sortOption)
+        .skip(skip)
+        .limit(limit),
+      Vehicledetail.countDocuments(query) 
+    ]);
+
+    res.json({
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+// Read
+router.get('/vehicledetails', async (req, res) => {
+  var query = {}
+  // query = {isActive:true}
+  try {
+    let { 
+      page = 1, 
+      limit = 10,
+      search,
+      fueltype,
+      transmissions,
+      locationcity,
+      minPrice,
+      maxPrice,
+      minYear,
+      maxYear,
+      minMileage,
+      maxMileage,
+      sort 
+    } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    if (isNaN(page) || page < 1) page = 1;
+    if (isNaN(limit) || limit < 1) limit = 10;
+
+const skip = (page - 1) * limit;
+
+    // let query = { isActive: true }; 
 
 if (search) {
   query.$or = [
@@ -395,53 +483,42 @@ router.post(
             .json({ success: false, error: `${field} is required.` });
         }
       }
-
       const year = parseInt(req.body.year, 10);
       if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
         return res
           .status(400)
           .json({ success: false, error: "Invalid year provided." });
       }
-
       const price = parseFloat(req.body.price);
       if (isNaN(price) || price <= 0) {
         return res
           .status(400)
           .json({ success: false, error: "Price must be a positive number." });
       }
-
       const ownercount = parseInt(req.body.ownercount, 10);
       if (isNaN(ownercount) || ownercount <= 0) {
         return res
           .status(400)
           .json({ success: false, error: "Owner count must be greater than 0." });
       }
-
-
       const pincodePattern = /^[0-9]{6}$/;
       if (!pincodePattern.test(req.body.localpincode)) {
         return res
           .status(400)
           .json({ success: false, error: "Pincode must be exactly 6 digits." });
       }
-
-      // Validate fuel type
       const validFuelTypes = ["Petrol", "Diesel", "Electric"];
       if (!validFuelTypes.includes(req.body.fueltype)) {
         return res
           .status(400)
           .json({ success: false, error: "Invalid fuel type." });
       }
-
-      // Validate transmission
       const validTransmissions = ["Automatic", "Manual", "Electric"];
       if (!validTransmissions.includes(req.body.transmission)) {
         return res
           .status(400)
           .json({ success: false, error: "Invalid transmission type." });
       }
-
-      // Build the object for MongoDB
       const vehicleData = {
         title: req.body.title.trim(),
         make: req.body.make.trim(),
@@ -466,7 +543,6 @@ router.post(
         })),
       };
 
-      // Save to DB using mongoose
       const vehicle = new Vehicledetail(vehicleData);
       await vehicle.save();
 
@@ -489,7 +565,6 @@ router.put(
         return res.status(404).send("No vehicle found with that ID");
       }
 
-      // Build update object (excluding images first)
       const vehicleData = {
         title: req.body.title,
         make: req.body.make,
@@ -512,13 +587,12 @@ router.put(
       let updatedImages = existingVehicle.images || [];
 
       if (req.files && req.files.length > 0) {
-        // frontend will send imageIndexes[] aligned with files[]
         const indexes = req.body.imageIndexes
           ? JSON.parse(req.body.imageIndexes)
           : [];
 
         req.files.forEach((file, i) => {
-          const slotIndex = indexes[i]; // which slot to replace
+          const slotIndex = indexes[i]; 
           const newImage = {
             data: file.buffer.toString("base64"),
             mimetype: file.mimetype,
@@ -557,14 +631,10 @@ router.put(
       if (!existingVehicle) {
         return res.status(404).send("No vehicle found with that ID");
       }
-
-      // Always set isActive to false
       const vehicleData = {  
         isActive: false,
-        images: existingVehicle.images || []  // initialize with existing images
+        images: existingVehicle.images || []  
       };
-
-      // If new files are uploaded, add them
       if (req.files && req.files.length > 0) {
         const newImages = req.files.map((file) => ({
           data: file.buffer.toString("base64"),
@@ -573,8 +643,6 @@ router.put(
         }));
         vehicleData.images = [...vehicleData.images, ...newImages];
       }
-
-      // Update vehicle details
       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
         id,
         { $set: vehicleData },
@@ -600,14 +668,11 @@ router.put(
       if (!existingVehicle) {
         return res.status(404).send("No vehicle found with that ID");
       }
-
-      // Always set isActive to true
       const vehicleData = {  
         isActive: true,
-        images: existingVehicle.images || [] // keep old images
+        images: existingVehicle.images || [] 
       };
 
-      // If new files are uploaded, add them
       if (req.files && req.files.length > 0) {
         const newImages = req.files.map((file) => ({
           data: file.buffer.toString("base64"),
@@ -617,7 +682,6 @@ router.put(
         vehicleData.images = [...vehicleData.images, ...newImages];
       }
 
-      // Update vehicle details
       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
         id,
         { $set: vehicleData },
