@@ -586,6 +586,7 @@ router.put(
         locationcity: req.body.locationcity,
         localpincode: req.body.localpincode,
         mileage_km: req.body.mileage_km,
+        created_at: req.body.created_at
         // status: req.body.status,
         // statushistory: req.body.statushistory,
         // isActive: true
@@ -653,7 +654,8 @@ router.put(
         target_id: updatedVehicle._id,
         from_status: existingVehicle.status || 'approved',
         to_status: 'deactivated',
-        reason: req.body.reason || null
+        reason: req.body.reason || null,
+        created_at: req.body.created_at
       });
 
       res.json(updatedVehicle);
@@ -690,7 +692,8 @@ router.put(
         target_id: updatedVehicle._id,
         from_status: existingVehicle.status || 'pending',
         to_status: 'approved',
-        reason: req.body.reason || null
+        reason: req.body.reason || null,
+        created_at: req.body.created_at
       });
 
       res.json(updatedVehicle);
