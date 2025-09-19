@@ -6,7 +6,7 @@ const bcrypt = require ('bcryptjs');
 const config = require('../config');
 const User = require('./userSchema');
 const Vehicledetail = require('./vehicleSchema');
-const adminAuditSchema = require('./adminAuditSchema')
+const AdminAudit = require('./adminAuditSchema')
 
 const multer = require("multer");
 
@@ -97,7 +97,7 @@ jwt.verify(token, config.secret, (err, decoded) => {
 
 router.get('/vehicledetailsbuyer', async (req, res) => {
   var query = {}
-  query = {isActive:false}
+  query = {isActive:true}
   try {
     let { 
       page = 1, 
@@ -123,7 +123,7 @@ router.get('/vehicledetailsbuyer', async (req, res) => {
 
 const skip = (page - 1) * limit;
 
-    let query = { isActive: false }; 
+    let query = { isActive: true}; 
 
 if (search) {
   query.$or = [
@@ -471,9 +471,12 @@ router.post(
         "description",
         "locationcity",
         "localpincode",
-        "status",
-        "statushistory",
-        "isActive"
+        "mileage_km",
+        // "status",
+        // "statushistory",
+        // "isActive",
+         "created_at",
+        "updated_at"
       ];
 
       for (const field of requiredFields) {
@@ -533,9 +536,12 @@ router.post(
         description: req.body.description,
         locationcity: req.body.locationcity,
         localpincode: req.body.localpincode,
-        status: req.body.status,
-        statushistory: req.body.statushistory,
-        isActive: req.body.isActive,
+        mileage_km: req.body.mileage_km,
+        // status: req.body.status,
+        // statushistory: req.body.statushistory,
+        // isActive: req.body.isActive,
+         created_at:req.body.created_at,
+        updated_at:req.body.updated_at,
         images: req.files.map(f => ({
           filename: f.originalname,
           mimetype: f.mimetype,
@@ -579,9 +585,10 @@ router.put(
         description: req.body.description,
         locationcity: req.body.locationcity,
         localpincode: req.body.localpincode,
-        status: req.body.status,
-        statushistory: req.body.statushistory,
-        isActive: true
+        mileage_km: req.body.mileage_km,
+        // status: req.body.status,
+        // statushistory: req.body.statushistory,
+        // isActive: true
       };
 
       let updatedImages = existingVehicle.images || [];
@@ -631,27 +638,27 @@ router.put(
       if (!existingVehicle) {
         return res.status(404).send("No vehicle found with that ID");
       }
-      const vehicleData = {  
-        isActive: false,
-        images: existingVehicle.images || []  
-      };
-      if (req.files && req.files.length > 0) {
-        const newImages = req.files.map((file) => ({
-          data: file.buffer.toString("base64"),
-          mimetype: file.mimetype,
-          filename: file.originalname,
-        }));
-        vehicleData.images = [...vehicleData.images, ...newImages];
-      }
+
       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
         id,
-        { $set: vehicleData },
+        { $set: { isActive: false, status: 'deactivated' } },
         { new: true }
       );
 
+      // Create audit record
+      await AdminAudit.create({
+        actor_id: req.user?._id, // assumes you attach logged-in admin in req.user
+        action: 'deactivate_listing',
+        target_type: 'listing',
+        target_id: updatedVehicle._id,
+        from_status: existingVehicle.status || 'approved',
+        to_status: 'deactivated',
+        reason: req.body.reason || null
+      });
+
       res.json(updatedVehicle);
     } catch (err) {
-      console.error("Error updating vehicle:", err);
+      console.error("Error deactivating vehicle:", err);
       res.status(500).send(err.message);
     }
   }
@@ -668,29 +675,27 @@ router.put(
       if (!existingVehicle) {
         return res.status(404).send("No vehicle found with that ID");
       }
-      const vehicleData = {  
-        isActive: true,
-        images: existingVehicle.images || [] 
-      };
-
-      if (req.files && req.files.length > 0) {
-        const newImages = req.files.map((file) => ({
-          data: file.buffer.toString("base64"),
-          mimetype: file.mimetype,
-          filename: file.originalname,
-        }));
-        vehicleData.images = [...vehicleData.images, ...newImages];
-      }
 
       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
         id,
-        { $set: vehicleData },
+        { $set: { isActive: true, status: 'approved' } },
         { new: true }
       );
 
+      // Create audit record
+      await AdminAudit.create({
+        actor_id: req.user?._id,
+        action: 'approve_listing',
+        target_type: 'listing',
+        target_id: updatedVehicle._id,
+        from_status: existingVehicle.status || 'pending',
+        to_status: 'approved',
+        reason: req.body.reason || null
+      });
+
       res.json(updatedVehicle);
     } catch (err) {
-      console.error("Error updating vehicle:", err);
+      console.error("Error activating vehicle:", err);
       res.status(500).send(err.message);
     }
   }

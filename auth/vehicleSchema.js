@@ -16,10 +16,12 @@ var VehicleSchema = new mongoose.Schema({
     description:String,
     locationcity:String,
     localpincode:Number,
-    status:String,
-    statushistory:String,
-    mileage:Number,
+    // status:String,
+    // statushistory:String,
+    mileage_km:Number,
     isActive:Boolean,
+     created_at:String,
+    updated_at:String,
      images: [
     {
       filename: String,
