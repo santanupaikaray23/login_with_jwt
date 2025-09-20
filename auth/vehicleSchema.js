@@ -26,7 +26,7 @@ var VehicleSchema = new mongoose.Schema({
     {
       filename: String,
       mimetype: String,
-      data: String, // base64 string
+      data: String, 
     },
   ],
 

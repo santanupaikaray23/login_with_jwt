@@ -6,7 +6,9 @@ const bcrypt = require ('bcryptjs');
 const config = require('../config');
 const User = require('./userSchema');
 const Vehicledetail = require('./vehicleSchema');
-const AdminAudit = require('./adminAuditSchema')
+const AdminAudit = require('./adminAuditSchema');
+const authMiddleware = require("../middleware/authMiddleware");
+
 
 const multer = require("multer");
 
@@ -630,6 +632,7 @@ router.put(
 
 router.put(
   "/deactivatevehicledetail/:id",
+  authMiddleware,
   upload.array("images", 5),
   async (req, res) => {
     try {
@@ -637,69 +640,74 @@ router.put(
       const existingVehicle = await Vehicledetail.findById(id);
 
       if (!existingVehicle) {
-        return res.status(404).send("No vehicle found with that ID");
+        return res.status(404).json({ message: "No vehicle found with that ID" });
       }
 
       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
         id,
-        { $set: { isActive: false, status: 'deactivated' } },
-        { new: true }
-      );
-
-      // Create audit record
-      await AdminAudit.create({
-        actor_id: req.user?._id, // assumes you attach logged-in admin in req.user
-        action: 'deactivate_listing',
-        target_type: 'listing',
-        target_id: updatedVehicle._id,
-        from_status: existingVehicle.status || 'approved',
-        to_status: 'deactivated',
-        reason: req.body.reason || null,
-        created_at: req.body.created_at
-      });
-
-      res.json(updatedVehicle);
-    } catch (err) {
-      console.error("Error deactivating vehicle:", err);
-      res.status(500).send(err.message);
-    }
-  }
-);
-
-router.put(
-  "/activatevehicledetail/:id",
-  upload.array("images", 5),
-  async (req, res) => {
-    try {
-      const id = req.params.id;
-      const existingVehicle = await Vehicledetail.findById(id);
-
-      if (!existingVehicle) {
-        return res.status(404).send("No vehicle found with that ID");
-      }
-
-      const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
-        id,
-        { $set: { isActive: true, status: 'approved' } },
+        { $set: { isActive: false, status: "deactivated" } },
         { new: true }
       );
 
       // Create audit record
       await AdminAudit.create({
         actor_id: req.user?._id,
-        action: 'approve_listing',
-        target_type: 'listing',
+        action: "deactivate_listing",
+        target_type: "listing",
         target_id: updatedVehicle._id,
-        from_status: existingVehicle.status || 'pending',
-        to_status: 'approved',
-        reason: req.body.reason || null,
-        created_at: req.body.created_at
+        from_status: existingVehicle.status || "approved",
+        to_status: "deactivated",
+        status: "deactivated",
+        reason: req.body.reason || null
       });
 
-      res.json(updatedVehicle);
+      res.json({ success: true, data: updatedVehicle });
+    } catch (err) {
+      console.error("Error deactivating vehicle:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+router.put(
+  "/activatevehicledetail/:id",
+  authMiddleware,
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const existingVehicle = await Vehicledetail.findById(id);
+
+      if (!existingVehicle) {
+        return res.status(404).json({ message: "No vehicle found with that ID" });
+      }
+
+      const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+        id,
+        { $set: { isActive: true, status: "approved" } },
+        { new: true }
+      );
+
+      if (!updatedVehicle) {
+        return res.status(500).json({ message: "Failed to update vehicle" });
+      }
+
+      // Create audit record
+      await AdminAudit.create({
+        actor_id: req.user?._id,
+        action: "approve_listing",
+        target_type: "listing",
+        target_id: updatedVehicle._id,
+        from_status: existingVehicle.status || "pending",
+        to_status: "approved",
+        status: "approved",
+        reason: req.body.reason || null
+      });
+
+      res.json({ success: true, data: updatedVehicle });
     } catch (err) {
       console.error("Error activating vehicle:", err);
-      res.status(500).send(err.message);
+      res.status(500).json({ error: err.message });
     }
   }
 );
