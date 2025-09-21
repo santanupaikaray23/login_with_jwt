@@ -7,7 +7,7 @@ var UserSchema = new mongoose.Schema({
     role:String,
     phone:Number,
     city:String,
-    is_blocked: { type: Boolean, default: false },
+    is_blocked: String,
     created_at:String,
     updated_at:String
 

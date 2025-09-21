@@ -18,13 +18,71 @@ const upload = multer({ storage: storage });
 router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
 
-let tokenBlacklist = [];
-router.get('/users',(req,res)=>{
-    User.find({},(err,data)=>{
-        if(err) throw err;
-        res.send(data)
-    })
-})
+// let tokenBlacklist = [];
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find(); // only active users
+    res.json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.put(
+  "/blockUser/:id",
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const existingUser = await User.findById(id);
+
+      if (!existingUser) {
+        return res.status(404).json({ message: "No user found with that ID" });
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { $set: { is_blocked: true, status: "blocked" } },
+        { new: true }
+      );
+
+      res.json({ success: true, data: updatedUser });
+    } catch (err) {
+      console.error("Error deactivating user:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
+router.put(
+  "/unblockUser/:id",
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const existingUser = await User.findById(id);
+
+      if (!existingUser) {
+        return res.status(404).json({ message: "No user found with that ID" });
+      }
+
+      const updatedUser = await User.findByIdAndUpdate(
+        id,
+        { $set: { is_blocked: false, status: "unblock" } },
+        { new: true }
+      );
+
+      res.json({ success: true, data: updatedUser });
+    } catch (err) {
+      console.error("Error activating user:", err);
+      res.status(500).json({ error: err.message });
+    }
+  }
+);
+
 router.post('/signup',(req,res)=>{
     var hashpassword = bcrypt.hashSync(req.body.password,8)
     User.create({
