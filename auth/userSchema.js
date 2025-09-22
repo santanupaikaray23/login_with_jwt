@@ -10,7 +10,6 @@ var UserSchema = new mongoose.Schema({
     is_blocked: String,
     created_at:String,
     updated_at:String
-
   
 })
 

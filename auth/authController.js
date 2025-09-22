@@ -18,10 +18,10 @@ const upload = multer({ storage: storage });
 router.use(bodyParser.urlencoded({extended:true}));
 router.use(bodyParser.json())
 
-// let tokenBlacklist = [];
+
 router.get("/users", async (req, res) => {
   try {
-    const users = await User.find(); // only active users
+    const users = await User.find(); 
     res.json({
       success: true,
       count: users.length,
@@ -104,6 +104,9 @@ router.post('/signup',(req,res)=>{
 })
 router.post('/login', (req, res) => {
   User.findOne({ email: req.body.email }, (err, user) => {
+    if(user && user.is_blocked == "true"){
+      return res.status(400).send({ auth: false, message: 'This user is blocked by admin' });
+    }
     if (err) return res.status(500).send({ auth: false, message: 'Error While Login' });
     if (!user) return res.status(404).send({ auth: false, message: 'No User Found! Register First' });
     const passIsValid = bcrypt.compareSync(req.body.password, user.password);
@@ -117,8 +120,6 @@ router.post('/login', (req, res) => {
       auth: true,
       token: token,
       user: {
-        // id: user._id,
-        // email: user.email,
         role: user.role
       }
     });
@@ -245,7 +246,6 @@ if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
 // Read
 router.get('/vehicledetails', async (req, res) => {
   var query = {}
-  // query = {isActive:true}
   try {
     let { 
       page = 1, 
@@ -262,17 +262,11 @@ router.get('/vehicledetails', async (req, res) => {
       maxMileage,
       sort 
     } = req.query;
-
     page = parseInt(page);
     limit = parseInt(limit);
-
     if (isNaN(page) || page < 1) page = 1;
     if (isNaN(limit) || limit < 1) limit = 10;
-
 const skip = (page - 1) * limit;
-
-    // let query = { isActive: true }; 
-
 if (search) {
   query.$or = [
     { make: new RegExp(search, 'i') },
@@ -290,7 +284,6 @@ if (minYear) query.year = { ...query.year, $gte: Number(minYear) };
 if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
 if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
 if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
-
     let sortOption = {};
     switch (sort) {
       case "newest":
@@ -308,7 +301,6 @@ if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
       default:
         sortOption = {}; 
     }
-
     const [data, total] = await Promise.all([
       Vehicledetail.find(query)
         .sort(sortOption)
@@ -330,92 +322,6 @@ if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
     res.status(500).json({ error: "Server error" });
   }
 });
-// router.get('/vehicledetails', async (req, res) => {
-//   try {
-//     let { 
-//       page = 1, 
-//       limit = 10,
-//       search,
-//       fueltype,
-//       transmissions,
-//       locationcity,
-//       minPrice,
-//       maxPrice,
-//       minYear,
-//       maxYear,
-//       minMileage,
-//       maxMileage,
-//       sort 
-//     } = req.query;
-
-//     page = parseInt(page);
-//     limit = parseInt(limit);
-
-//     if (isNaN(page) || page < 1) page = 1;
-//     if (isNaN(limit) || limit < 1) limit = 10;
-
-//     const skip = (page - 1) * limit;
-
-//     // Always enforce isActive = true
-//     const query = { isActive: true };
-
-//     if (search) {
-//       query.$or = [
-//         { make: new RegExp(search, 'i') },
-//         { model: new RegExp(search, 'i') },
-//         { title: new RegExp(search, 'i') },
-//         { description: new RegExp(search, 'i') }
-//       ];
-//     }
-//     if (fueltype) query.fueltype = fueltype;
-//     if (transmissions) query.transmission = transmissions;
-//     if (locationcity) query.locationcity = locationcity;
-//     if (minPrice) query.price = { ...query.price, $gte: Number(minPrice) };
-//     if (maxPrice) query.price = { ...query.price, $lte: Number(maxPrice) };
-//     if (minYear) query.year = { ...query.year, $gte: Number(minYear) };
-//     if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
-//     if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
-//     if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
-
-//     let sortOption = {};
-//     switch (sort) {
-//       case "newest":
-//         sortOption = { createdAt: -1 }; 
-//         break;
-//       case "price_low":
-//         sortOption = { price: 1 };
-//         break;
-//       case "price_high":
-//         sortOption = { price: -1 };
-//         break;
-//       case "year":
-//         sortOption = { year: -1 };
-//         break;
-//       default:
-//         sortOption = {}; 
-//     }
-
-//     const [data, total] = await Promise.all([
-//       Vehicledetail.find(query)
-//         .sort(sortOption)
-//         .skip(skip)
-//         .limit(limit),
-//       Vehicledetail.countDocuments(query) 
-//     ]);
-
-//     res.json({
-//       data,
-//       total,
-//       page,
-//       limit,
-//       totalPages: Math.ceil(total / limit)
-//     });
-
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).json({ error: "Server error" });
-//   }
-// });
 
 router.get('/vehicledetails/total', async (req, res) => {
   try {
@@ -449,65 +355,13 @@ router.get('/vehicledetails/total', async (req, res) => {
     if (maxYear) query.year = { ...query.year, $lte: Number(maxYear) };
     if (minMileage) query.mileage = { ...query.mileage, $gte: Number(minMileage) };
     if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
-
     const total = await Vehicledetail.countDocuments(query);
-
     res.json({ total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error" });
   }
 });
-// Inserts
-// router.post('/addvehicledetail', async (req, res) => {
-//   try {
-//     console.log("Request body:", req.body);
-//     const vehicle = new Vehicledetail(req.body);
-//     await vehicle.save();
-//  res.status(201).send('Data Added');
-//   } catch (err) {
-//     console.error('Error adding vehicle:', err);
-//     res.status(500).json({ error: err.message, details: err });
-//   }
-// });
-
-// router.put('/updatevehicledetail', async (req, res) => {
-//   try {
-//     const id = req.body._id;
-//     const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
-//       id,
-//       {
-//         $set: {
-//           sellerid: req.body.sellerid,
-//           title: req.body.title,
-//           make: req.body.make,
-//           model: req.body.model,
-//           variant: req.body.variant,
-//           year: req.body.year,
-//           fueltype: req.body.fueltype,
-//           transmission: req.body.transmission,
-//           ownercount: req.body.ownercount,
-//           registrationstate: req.body.registrationstate,
-//           price: req.body.price,
-//           description: req.body.description,
-//           locationcity: req.body.locationcity,
-//           localpincode: req.body.localpincode,
-//           images: req.body.images,
-//           mileage: req.body.mileage,
-//           isActive: true,
-//         },
-//       },
-//       { new: true } 
-//     );
-//     if (!updatedVehicle) {
-//       return res.status(404).send('No vehicle found with that ID');
-//     }
-//   res.send('Data Updated');
-//   } catch (err) {
-//     console.error('Error updating vehicle:', err);
-//     res.status(500).send(err.message);
-//   }
-// });
 
 router.post(
   "/addvehicledetail",
@@ -516,7 +370,6 @@ router.post(
     try {
       console.log("Body fields:", req.body);
       console.log("Files:", req.files);
-
       const requiredFields = [
         "title",
         "make",
@@ -532,13 +385,9 @@ router.post(
         "locationcity",
         "localpincode",
         "mileage_km",
-        // "status",
-        // "statushistory",
-        // "isActive",
          "created_at",
         "updated_at"
       ];
-
       for (const field of requiredFields) {
         if (!req.body[field] || req.body[field].toString().trim() === "") {
           return res
@@ -597,9 +446,6 @@ router.post(
         locationcity: req.body.locationcity,
         localpincode: req.body.localpincode,
         mileage_km: req.body.mileage_km,
-        // status: req.body.status,
-        // statushistory: req.body.statushistory,
-        // isActive: req.body.isActive,
          created_at:req.body.created_at,
         updated_at:req.body.updated_at,
         images: req.files.map(f => ({
@@ -647,9 +493,6 @@ router.put(
         localpincode: req.body.localpincode,
         mileage_km: req.body.mileage_km,
         created_at: req.body.created_at
-        // status: req.body.status,
-        // statushistory: req.body.statushistory,
-        // isActive: true
       };
 
       let updatedImages = existingVehicle.images || [];
@@ -707,7 +550,6 @@ router.put(
         { new: true }
       );
 
-      // Create audit record
       await AdminAudit.create({
         actor_id: req.user?._id,
         action: "deactivate_listing",
@@ -750,7 +592,6 @@ router.put(
         return res.status(500).json({ message: "Failed to update vehicle" });
       }
 
-      // Create audit record
       await AdminAudit.create({
         actor_id: req.user?._id,
         action: "approve_listing",
