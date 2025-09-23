@@ -83,6 +83,17 @@ router.put(
   }
 );
 
+// Read
+router.get("/adminAudit", async (req, res) => {
+  try {
+    const audits = await AdminAudit.find().populate("actor_id"); 
+    res.json(audits);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error while fetching audits" });
+  }
+});
+
 router.post('/signup',(req,res)=>{
     var hashpassword = bcrypt.hashSync(req.body.password,8)
     User.create({
@@ -323,6 +334,15 @@ if (maxMileage) query.mileage = { ...query.mileage, $lte: Number(maxMileage) };
   }
 });
 
+router.get('/vehicledetails/:id', async (req, res) => {
+  try {
+    const vehicle = await Vehicledetail.findById(req.params.id);
+    res.json(vehicle);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
+
 router.get('/vehicledetails/total', async (req, res) => {
   try {
     let { 
@@ -448,6 +468,7 @@ router.post(
         mileage_km: req.body.mileage_km,
          created_at:req.body.created_at,
         updated_at:req.body.updated_at,
+        status: req.body.status || "draft",
         images: req.files.map(f => ({
           filename: f.originalname,
           mimetype: f.mimetype,
@@ -546,7 +567,7 @@ router.put(
 
       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
         id,
-        { $set: { isActive: false, status: "deactivated" } },
+        { $set: { isActive: false, status: "rejected" } },
         { new: true }
       );
 
