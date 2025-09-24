@@ -8,6 +8,7 @@ const User = require('./userSchema');
 const Vehicledetail = require('./vehicleSchema');
 const AdminAudit = require('./adminAuditSchema');
 const authMiddleware = require("../middleware/authMiddleware");
+const Expression = require('./expressionSchema')
 
 
 const multer = require("multer");
@@ -91,6 +92,31 @@ router.get("/adminAudit", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Server error while fetching audits" });
+  }
+});
+
+router.get("/expressions", async (req, res) => {
+  try {
+    const expressions = await Expression.find()
+      .populate("listing_id")   
+      .populate("buyer_id");    
+
+    res.json(expressions);
+  } catch (err) {
+    console.error("Error fetching expressions:", err);
+    res.status(500).json({ error: "Server error while fetching expressions" });
+  }
+});
+
+router.post("/addexpressions", async (req, res) => {
+  console.log("Incoming payload:", req.body); 
+  try {
+    const expression = new Expression(req.body);
+    await expression.save();                     
+    res.status(201).json({ message: "Data Added", expression });
+  } catch (err) {
+    console.error("Error adding expression:", err);
+    res.status(500).json({ error: "Server error while adding expression" });
   }
 });
 
