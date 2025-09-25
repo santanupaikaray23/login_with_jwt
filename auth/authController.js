@@ -137,6 +137,31 @@ router.post("/addExpressions", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/expressions/:id", async (req, res) => {
+  try {
+    const expression = await Expression.findById(req.params.id)
+      .populate("buyer_id")
+      .populate("listing_id");
+
+    if (!expression) {
+      return res.status(404).json({ error: "Expression not found" });
+    }
+
+    res.json(expression);
+  } catch (err) {
+    console.error("Error fetching expression by ID:", err);
+    res.status(500).json({ error: "Server error while fetching expression" });
+  }
+});
+
+router.get("/vehicledetails/:id", async (req, res) => {
+  try {
+    const vehicle = await Vehicledetail.findById(req.params.id);
+    res.json(vehicle);
+  } catch (err) {
+    res.status(500).send(err);
+  }
+});
 // router.put(
 //   "/expressions/:id",
 //   authMiddleware,
