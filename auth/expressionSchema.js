@@ -1,26 +1,24 @@
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+var mongoose = require("mongoose");
 
-var ExpressionSchema = new Schema(
-  {
-    vehicle_id: Number,
-    buyer_id: Number,
-    message:String,
-    contact_phone: Number,
-    preferred_contact_time: String, 
-     createdAt: String, 
-     updatedAt: String,
-    status: { 
-      type: String, 
-      enum: ['new','contacted','closed'], 
-      default: 'new' 
-    }
+var ExpressionSchema = new mongoose.Schema({
+  buyer_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
   },
-  
-     
-  
-);
+  listing_id: { type: String, required: true },
+  vehicle_name: { type: String, required: false },
+  vehicle_price: { type: Number, required: false },
+  message: { type: String, required: true },
+  contact_phone: { type: String, match: /^[0-9]{10}$/, required: true },
+  preferred_contact_time: { type: String },
+  status: {
+    type: String,
+    enum: ["new", "contacted", "closed"],
+    default: "new",
+  },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
+});
 
-const Expression = mongoose.model('expression', ExpressionSchema);
-
-module.exports = Expression;
+module.exports = mongoose.model("Expression", ExpressionSchema);
