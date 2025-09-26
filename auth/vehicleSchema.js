@@ -1,8 +1,8 @@
 var mongoose = require ('mongoose');
 
 var VehicleSchema = new mongoose.Schema({
-    id:Number,
-    sellerid:Number,
+    vehicle_id:Number,
+    seller_id:Number,
     title:String,
     make:String,
     model:String,
