@@ -760,34 +760,19 @@ router.put(
     }
 );
 
-
-router.delete("/deletevehicledetail", async(req, res) => {
-    try {
-        const id = req.body._id;
-        const deletedVehicle = await Vehicledetail.findByIdAndDelete(id);
-        if (!deletedVehicle) {
-            return res.status(404).send("No vehicle found with that ID");
-        }
-        res.send("Data Deleted");
-    } catch (err) {
-        console.error("Error deleting vehicle:", err);
-        res.status(500).send(err.message);
-    }
-});
-
 router.delete("/deletevehicledetail/:id", async(req, res) => {
     try {
         const id = req.params.id;
         const deletedVehicle = await Vehicledetail.findByIdAndDelete(id);
 
         if (!deletedVehicle) {
-            return res.status(404).send("No vehicle found with that ID");
+            return res.status(404).res.json({data:"No vehicle found with that ID"});
         }
 
-        res.send("Data Deleted");
+        return res.json({data:"Data Deleted"});
     } catch (err) {
         console.error("Error deleting vehicle:", err);
-        res.status(500).send(err.message);
+        res.status(500).json({"error":err.message});
     }
 });
 
