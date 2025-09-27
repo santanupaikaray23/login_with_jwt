@@ -666,7 +666,7 @@ router.put(
             }
 
             const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
-                id, { $set: { isActive: true, status: "sold" } }, { new: true }
+                id, { $set: { isActive: false, status: "sold" } }, { new: true }
             );
 
             if (!updatedVehicle) {
