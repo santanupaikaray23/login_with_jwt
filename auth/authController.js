@@ -171,28 +171,41 @@ router.get("/vehicledetails/:id", async(req, res) => {
     }
 });
 
-router.post("/signup", (req, res) => {
-    var hashpassword = bcrypt.hashSync(req.body.password, 8);
-    User.create({
-            name: req.body.name,
-            password: hashpassword,
-            email: req.body.email,
-            role: req.body.role ? req.body.role : "Admin",
-            phone: req.body.phone,
-            city: req.body.city,
-            is_blocked: false,
-            created_at: req.body.created_at,
-            updated_at: req.body.updated_at,
-        },
-        (err) => {
-            if (err)
-                return res
-                    .status(500)
-                    .send({ message: "Signup failed. Please try again" });
-            res.status(200).json({ message: "Signup Success" });
-        }
-    );
+router.post("/signup", async (req, res) => {
+  try {
+    const { name, email, password, role, phone, city, created_at, updated_at } = req.body;
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already registered with this email" });
+    }
+
+    // Hash password
+    const hashpassword = bcrypt.hashSync(password, 8);
+
+    // Create new user
+    const newUser = new User({
+      name,
+      email,
+      password: hashpassword,
+      role: role || "Admin",
+      phone,
+      city,
+      is_blocked: false,
+      created_at,
+      updated_at,
+    });
+
+    await newUser.save();
+
+    res.status(200).json({ message: "Signup Success" });
+  } catch (err) {
+    console.error("Signup Error:", err);
+    res.status(500).json({ message: "Signup failed. Please try again" });
+  }
 });
+
 router.post("/login", (req, res) => {
     User.findOne({ email: req.body.email }, (err, user) => {
         if (user && user.is_blocked == "true") {
@@ -502,6 +515,7 @@ router.post(
                 "mileage_km",
                 "created_at",
                 "updated_at",
+                "status"
             ];
             for (const field of requiredFields) {
                 if (!req.body[field] || req.body[field].toString().trim() === "") {
@@ -586,67 +600,6 @@ router.post(
 );
 
 router.put(
-    "/updatevehicledetail/:id",
-    upload.array("images", 5),
-    async(req, res) => {
-        try {
-            const id = req.params.id;
-            const existingVehicle = await Vehicledetail.findById(id);
-            if (!existingVehicle) {
-                return res.status(404).send("No vehicle found with that ID");
-            }
-            const vehicleData = {
-                title: req.body.title,
-                make: req.body.make,
-                model: req.body.model,
-                variant: req.body.variant,
-                year: req.body.year,
-                fueltype: req.body.fueltype,
-                transmission: req.body.transmission,
-                ownercount: req.body.ownercount,
-                registrationstate: req.body.registrationstate,
-                price: req.body.price,
-                description: req.body.description,
-                locationcity: req.body.locationcity,
-                localpincode: req.body.localpincode,
-                mileage_km: req.body.mileage_km,
-                created_at: req.body.created_at,
-            };
-
-            let updatedImages = existingVehicle.images || [];
-
-            if (req.files && req.files.length > 0) {
-                const indexes = req.body.imageIndexes ?
-                    JSON.parse(req.body.imageIndexes) : [];
-
-                req.files.forEach((file, i) => {
-                    const slotIndex = indexes[i];
-                    const newImage = {
-                        data: file.buffer.toString("base64"),
-                        mimetype: file.mimetype,
-                        filename: file.originalname,
-                    };
-                    if (typeof slotIndex === "number") {
-                        updatedImages[slotIndex] = newImage;
-                    }
-                });
-
-                vehicleData.images = updatedImages;
-            }
-
-            const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
-                id, { $set: vehicleData }, { new: true }
-            );
-
-            res.json(updatedVehicle);
-        } catch (err) {
-            console.error("Error updating vehicle:", err);
-            res.status(500).send(err.message);
-        }
-    }
-);
-
-router.put(
     "/deactivatevehicledetail/:id",
     authMiddleware,
     upload.array("images", 5),
@@ -693,6 +646,60 @@ router.put(
             res.json({ success: true, data: updatedVehicle });
         } catch (err) {
             console.error("Error deactivating vehicle:", err);
+            res.status(500).json({ error: err.message });
+        }
+    }
+);
+
+router.put(
+    "/sold/:id",
+    authMiddleware,
+    // upload.array("images", 5),
+    async(req, res) => {
+        try {
+            const id = req.params.id;
+            const existingVehicle = await Vehicledetail.findById(id);
+            if (!existingVehicle) {
+                return res
+                    .status(404)
+                    .json({ message: "No vehicle found with that ID" });
+            }
+
+            const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+                id, { $set: { isActive: true, status: "sold" } }, { new: true }
+            );
+
+            if (!updatedVehicle) {
+                return res.status(500).json({ message: "Failed to update vehicle" });
+            }
+
+            const auditQuery = {
+                target_id: updatedVehicle._id,
+                target_type: "listing"
+            };
+
+            const auditData = {
+                actor_id: req.user._id,
+                action: "approve_listing",
+                target_type: "listing",
+                target_id: updatedVehicle._id,
+                from_status: existingVehicle.status || "pending",
+                to_status: "sold",
+                status: "sold",
+                reason: req.body.reason || null,
+            };
+
+            const existingAudit = await AdminAudit.findOne(auditQuery);
+
+            if (existingAudit) {
+                await AdminAudit.findByIdAndUpdate(existingAudit._id, { $set: auditData });
+            } else {
+                await AdminAudit.create(auditData);
+            }
+
+            res.json({ success: true, data: updatedVehicle });
+        } catch (err) {
+            console.error("Error activating vehicle:", err);
             res.status(500).json({ error: err.message });
         }
     }
@@ -752,6 +759,7 @@ router.put(
         }
     }
 );
+
 
 router.delete("/deletevehicledetail", async(req, res) => {
     try {

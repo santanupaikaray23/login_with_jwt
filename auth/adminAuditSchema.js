@@ -4,7 +4,7 @@ var AdminAuditSchema = new mongoose.Schema({
   actor_id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   action: { 
     type: String, 
-    enum: ["approve_listing", "reject_listing", "block_user", "deactivate_listing"], 
+    enum: ["approve_listing", "reject_listing", "block_user", "deactivate_listing","sold"], 
     required: true 
   },
   target_type: { type: String, enum: ["listing", "user", "eoi"], required: true },

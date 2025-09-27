@@ -20,7 +20,8 @@ var VehicleSchema = new mongoose.Schema({
     isActive:Boolean,
      created_at:String,
     updated_at:String,
-status: { type: String, enum: ["pending", "approved", "rejected", "sold"], default: "pending" },
+    
+status: { type: String, enum: ["pending", "approved", "rejected", "sold","draft"], default: "draft" },
      images: [
     {
       filename: String,
