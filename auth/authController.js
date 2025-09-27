@@ -72,7 +72,6 @@ router.put("/unblockUser/:id", async(req, res) => {
     }
 });
 
-// Read
 router.get("/adminAudit", async(req, res) => {
     try {
         const audits = await AdminAudit.find().populate("actor_id");
@@ -171,42 +170,6 @@ router.get("/vehicledetails/:id", async(req, res) => {
         res.status(500).send(err);
     }
 });
-// router.put(
-//   "/expressions/:id",
-//   authMiddleware,
-//   async (req, res) => {
-//     try {
-//       const id = req.params.id;
-//       const existingExpression = await Expression.findById(id);
-
-//       if (!existingExpression) {
-//         return res.status(404).json({ message: "No expression found with that ID" });
-//       }
-
-//       const updatedExpression = await Expression.findByIdAndUpdate(
-//         id,
-//         {
-//      $set: {
-//   message: req.body.message,
-//   contact_phone: req.body.contact_phone,
-//   preferred_contact_time: req.body.preferred_contact_time,
-//   status: req.body.status || existingExpression.status,
-//   updated_at: new Date()
-// }
-//         },
-//         { new: true }
-//       );
-
-//       if (!updatedExpression) {
-//         return res.status(500).json({ message: "Failed to update expression" });
-//       }
-//       res.json({ success: true, data: updatedExpression });
-//     } catch (err) {
-//       console.error("Error updating expression:", err);
-//       res.status(500).json({ error: err.message });
-//     }
-//   }
-// );
 
 router.post("/signup", (req, res) => {
     var hashpassword = bcrypt.hashSync(req.body.password, 8);
@@ -386,7 +349,7 @@ router.get("/vehicledetailsbuyer", async(req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
-// Read
+
 router.get("/vehicledetails", async(req, res) => {
     var query = {};
     try {
@@ -683,44 +646,6 @@ router.put(
     }
 );
 
-// router.put(
-//     "/deactivatevehicledetail/:id",
-//     authMiddleware,
-//     upload.array("images", 5),
-//     async(req, res) => {
-//         try {
-//             const id = req.params.id;
-//             const existingVehicle = await Vehicledetail.findById(id);
-
-//             if (!existingVehicle) {
-//                 return res
-//                     .status(404)
-//                     .json({ message: "No vehicle found with that ID" });
-//             }
-
-//             const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
-//                 id, { $set: { isActive: false, status: "rejected" } }, { new: true }
-//             );
-
-//             await AdminAudit.create({
-//                 actor_id: req.user._id,
-//                 action: "deactivate_listing",
-//                 target_type: "listing",
-//                 target_id: updatedVehicle._id,
-//                 from_status: existingVehicle.status || "approved",
-//                 to_status: "deactivated",
-//                 status: "deactivated",
-//                 reason: req.body.reason || null,
-//             });
-
-//             res.json({ success: true, data: updatedVehicle });
-//         } catch (err) {
-//             console.error("Error deactivating vehicle:", err);
-//             res.status(500).json({ error: err.message });
-//         }
-//     }
-// );
-
 router.put(
     "/deactivatevehicledetail/:id",
     authMiddleware,
@@ -753,8 +678,8 @@ router.put(
                 target_type: "listing",
                 target_id: updatedVehicle._id,
                 from_status: existingVehicle.status || "approved",
-                to_status: "deactivated",
-                status: "deactivated",
+                to_status: "rejected",
+                status: "rejected",
                 reason: req.body.reason || null,
             };
 
