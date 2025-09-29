@@ -600,6 +600,181 @@ router.post(
 );
 
 router.put(
+  "/updatevehicledetail/:id",
+  upload.array("images", 5),
+  async (req, res) => {
+    try {
+      const id = req.params.id;
+      const existingVehicle = await Vehicledetail.findById(id);
+      if (!existingVehicle) {
+        return res.status(404).send("No vehicle found with that ID");
+      }
+      const vehicleData = {
+        title: req.body.title,
+        make: req.body.make,
+        model: req.body.model,
+        variant: req.body.variant,
+        year: req.body.year,
+        fueltype: req.body.fueltype,
+        transmission: req.body.transmission,
+        ownercount: req.body.ownercount,
+        registrationstate: req.body.registrationstate,
+        price: req.body.price,
+        description: req.body.description,
+        locationcity: req.body.locationcity,
+        localpincode: req.body.localpincode,
+        mileage_km: req.body.mileage_km,
+        created_at: req.body.created_at,
+      };
+
+      let updatedImages = existingVehicle.images || [];
+
+      if (req.files && req.files.length > 0) {
+        const indexes = req.body.imageIndexes
+          ? JSON.parse(req.body.imageIndexes)
+          : [];
+
+        req.files.forEach((file, i) => {
+          const slotIndex = indexes[i];
+          const newImage = {
+            data: file.buffer.toString("base64"),
+            mimetype: file.mimetype,
+            filename: file.originalname,
+          };
+          if (typeof slotIndex === "number") {
+            updatedImages[slotIndex] = newImage;
+          }
+        });
+
+        vehicleData.images = updatedImages;
+      }
+
+      const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+        id,
+        { $set: vehicleData },
+        { new: true }
+      );
+
+      res.json(updatedVehicle);
+    } catch (err) {
+      console.error("Error updating vehicle:", err);
+      res.status(500).send(err.message);
+    }
+  })
+// router.put(
+//   "/updatevehicledetail/:id",
+//   upload.array("images", 5),
+//   async (req, res) => {
+//     try {
+//       console.log("Update Body fields:", req.body);
+//       console.log("Update Files:", req.files);
+
+//       const vehicleId = req.params.id;
+//       if (!vehicleId) {
+//         return res.status(400).json({ success: false, error: "Vehicle ID is required." });
+//       }
+
+//       // Fetch existing vehicle to preserve some fields (like images, status if needed)
+//       const existingVehicle = await Vehicledetail.findById(vehicleId);
+//       if (!existingVehicle) {
+//         return res.status(404).json({ success: false, error: "Vehicle not found." });
+//       }
+
+//       // Build updated data object
+//       let updatedData = {
+//         title: req.body.title?.trim() || existingVehicle.title,
+//         make: req.body.make?.trim() || existingVehicle.make,
+//         model: req.body.model?.trim() || existingVehicle.model,
+//         variant: req.body.variant || existingVehicle.variant,
+//         year: req.body.year ? parseInt(req.body.year, 10) : existingVehicle.year,
+//         fueltype: req.body.fueltype || existingVehicle.fueltype,
+//         transmission: req.body.transmission || existingVehicle.transmission,
+//         ownercount: req.body.ownercount ? parseInt(req.body.ownercount, 10) : existingVehicle.ownercount,
+//         registrationstate: req.body.registrationstate || existingVehicle.registrationstate,
+//         price: req.body.price ? parseFloat(req.body.price) : existingVehicle.price,
+//         description: req.body.description || existingVehicle.description,
+//         locationcity: req.body.locationcity || existingVehicle.locationcity,
+//         localpincode: req.body.localpincode || existingVehicle.localpincode,
+//         mileage_km: req.body.mileage_km || existingVehicle.mileage_km,
+//         updated_at: new Date(),
+//         status: req.body.status || existingVehicle.status,  // preserve old if empty
+//       };
+
+//       // Optional: Validate critical fields if passed (like in POST)
+//       if (req.body.year) {
+//         const year = parseInt(req.body.year, 10);
+//         if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
+//           return res.status(400).json({ success: false, error: "Invalid year provided." });
+//         }
+//       }
+
+//       if (req.body.price) {
+//         const price = parseFloat(req.body.price);
+//         if (isNaN(price) || price <= 0) {
+//           return res.status(400).json({ success: false, error: "Price must be a positive number." });
+//         }
+//       }
+
+//       if (req.body.ownercount) {
+//         const ownercount = parseInt(req.body.ownercount, 10);
+//         if (isNaN(ownercount) || ownercount <= 0) {
+//           return res.status(400).json({
+//             success: false,
+//             error: "Owner count must be greater than 0.",
+//           });
+//         }
+//       }
+
+//       if (req.body.localpincode) {
+//         const pincodePattern = /^[0-9]{6}$/;
+//         if (!pincodePattern.test(req.body.localpincode)) {
+//           return res
+//             .status(400)
+//             .json({ success: false, error: "Pincode must be exactly 6 digits." });
+//         }
+//       }
+
+//       if (req.body.fueltype) {
+//         const validFuelTypes = ["Petrol", "Diesel", "Electric"];
+//         if (!validFuelTypes.includes(req.body.fueltype)) {
+//           return res.status(400).json({ success: false, error: "Invalid fuel type." });
+//         }
+//       }
+
+//       if (req.body.transmission) {
+//         const validTransmissions = ["Automatic", "Manual", "Electric"];
+//         if (!validTransmissions.includes(req.body.transmission)) {
+//           return res.status(400).json({ success: false, error: "Invalid transmission type." });
+//         }
+//       }
+
+//       // Handle new uploaded images (if any)
+//       if (req.files && req.files.length > 0) {
+//         updatedData.images = req.files.map((f) => ({
+//           filename: f.originalname,
+//           mimetype: f.mimetype,
+//           data: f.buffer.toString("base64"),
+//         }));
+//       } else {
+//         updatedData.images = existingVehicle.images; // keep old images
+//       }
+
+//       // Update document
+//       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
+//         vehicleId,
+//         updatedData,
+//         { new: true } // return updated doc
+//       );
+
+//       res.json({ success: true, vehicle: updatedVehicle });
+//     } catch (err) {
+//       console.error("Error updating vehicle:", err);
+//       res.status(500).json({ success: false, error: err.message });
+//     }
+//   }
+// );
+
+router.put(
     "/deactivatevehicledetail/:id",
     authMiddleware,
     upload.array("images", 5),
@@ -774,6 +949,33 @@ router.delete("/deletevehicledetail/:id", async(req, res) => {
         console.error("Error deleting vehicle:", err);
         res.status(500).json({"error":err.message});
     }
+});
+
+router.get("/buyerStatus", async (req, res) => {
+  try {
+    const expressions = await Expression.find()
+      .populate("buyer_id"); // populates buyer details from User model
+
+    res.json(expressions);
+  } catch (err) {
+    console.error("Error fetching buyer statuses:", err);
+    res.status(500).json({ error: "Server error while fetching buyer statuses" });
+  }
+});
+
+router.get("/buyerStatus/:id", async (req, res) => {
+  try {
+    const expression = await Expression.find({listing_id: req.params.id}).populate("buyer_id");
+
+    if (!expression) {
+      return res.status(404).json({ error: "Buyer status not found" });
+    }
+
+    res.json(expression);
+  } catch (err) {
+    console.error("Error fetching buyer status by ID:", err);
+    res.status(500).json({ error: "Server error while fetching buyer status" });
+  }
 });
 
 module.exports = router;
