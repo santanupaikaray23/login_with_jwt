@@ -82,13 +82,15 @@ router.get("/adminAudit", async(req, res) => {
     }
 });
 
-router.get("/adminAudit/:id", async(req, res) => {
+router.get("/adminAudit/:id", async (req, res) => {
     try {
-        const audit = await AdminAudit.find({ target_id: req.params.id });
-        if (!audit) {
-            return res.status(404).json({ error: "Audit not found" });
+        const audits = await AdminAudit.find({ target_id: req.params.id })
+
+        if (audits.length === 0) {
+            return res.status(404).json({ error: "No audits found for this target" });
         }
-        res.json(audit);
+
+        res.json(audits);
     } catch (err) {
         console.error("Error fetching audit:", err);
         res.status(500).json({ error: "Server error while fetching audit" });
@@ -108,41 +110,93 @@ router.get("/expressions", async(req, res) => {
     }
 });
 
-router.post("/addExpressions", authMiddleware, async(req, res) => {
-    try {
-        const buyer_id = req.user._id;
-        const {
-            listing_id,
-            vehicle_name,
-            vehicle_price,
-            message,
-            contact_phone,
-            preferred_contact_time,
-            status,
-        } = req.body;
-        if (!buyer_id || !listing_id || !message || !contact_phone) {
-            return res.status(400).json({
-                error: "buyer_id, listing_id, message, and contact_phone are required.",
-            });
-        }
-        const expression = new Expression({
-            buyer_id,
-            listing_id,
-            vehicle_name,
-            vehicle_price,
-            message,
-            contact_phone,
-            preferred_contact_time,
-            status,
-        });
+router.post("/addExpressions", authMiddleware, async (req, res) => {
+  try {
+    const buyer_id = req.user._id;
+    const {
+      listing_id,
+      vehicle_name,
+      vehicle_price,
+      message,
+      contact_phone,
+      preferred_contact_time,
+      status,
+    } = req.body;
 
-        const savedExpression = await expression.save();
-
-        res.status(201).json(savedExpression);
-    } catch (err) {
-        console.error("Error creating expression:", err);
-        res.status(500).json({ error: "Server error while creating expression" });
+    // Validate required fields
+    if (!buyer_id || !listing_id || !message || !contact_phone) {
+      return res.status(400).json({
+        error: "buyer_id, listing_id, message, and contact_phone are required.",
+      });
     }
+
+    // Update if exists, else create new
+    const updatedExpression = await Expression.findOneAndUpdate(
+      { buyer_id, listing_id }, // search condition
+      {
+        $set: {
+          vehicle_name,
+          vehicle_price,
+          message,
+          contact_phone,
+          preferred_contact_time,
+          status,
+        },
+      },
+      { new: true, upsert: true } // return updated doc, create if not found
+    );
+
+    res.status(200).json(updatedExpression);
+  } catch (err) {
+    console.error("Error creating/updating expression:", err);
+    res.status(500).json({ error: "Server error while creating/updating expression" });
+  }
+});
+
+router.put("/expressions/:id", authMiddleware, async (req, res) => {
+  try {
+    const vehicleId = req.params.id;
+    // const buyer_id = req.user._id; // logged in user
+
+    const {
+      status,
+    } = req.body;
+
+    console.log('vehicleId:', vehicleId, status);
+    // Find existing expression
+    const existingExpression = await Expression.findOne({
+      listing_id: vehicleId,
+       // ensure buyer can only update their own expression
+    });
+
+    if (!existingExpression) {
+      return res.status(404).json({ message: "No expression found with that ID for this buyer" });
+    }
+
+    console.log("Existing Expression:", existingExpression);
+
+    // Update expression
+    const updatedExpression = await Expression.findByIdAndUpdate(
+     existingExpression._id,
+      {
+        $set: {
+            
+          status
+          
+        },
+      },
+      { new: true }
+    );
+
+    if (!updatedExpression) {
+      return res.status(500).json({ message: "Failed to update expression" });
+    }
+
+    res.json({ success: true, data: updatedExpression });
+  } catch (err) {
+    console.error("Error updating expression:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 router.get("/expressions/:id", async(req, res) => {

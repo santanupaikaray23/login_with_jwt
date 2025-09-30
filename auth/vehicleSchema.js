@@ -21,7 +21,7 @@ var VehicleSchema = new mongoose.Schema({
      created_at:String,
     updated_at:String,
     
-status: { type: String, enum: ["approved", "rejected", "sold","drafted"], default: "drafted" },
+status: { type: String, enum: ["approved", "rejected", "sold","draft"], default: "draft" },
      images: [
     {
       filename: String,
