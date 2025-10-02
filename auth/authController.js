@@ -16,25 +16,20 @@ const storage = multer.memoryStorage();
 
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = ["image/jpeg", "image/png"]; 
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true); // accept the file
-  } else {
-    cb(new Error("Only .jpg and .png formats are allowed!"), false);
-  }
+    const allowedTypes = ["image/jpeg", "image/png"];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        const error = new Error("Only .jpg and .png formats are allowed!");
+        error.status = 400; // optional
+        cb(error, false);
+    }
 };
 
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
-});
-
-router.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError || err.message.includes("Only")) {
-    return res.status(400).json({ success: false, error: err.message });
-  }
-  next(err);
 });
 
 router.use(bodyParser.urlencoded({ extended: true }));
