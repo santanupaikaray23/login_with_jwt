@@ -6,6 +6,7 @@ var UserSchema = new mongoose.Schema({
     password:String,
     role:String,
     phone:Number,
+    avatar_url:String,
     city:String,
     is_blocked: String,
     created_at:String,

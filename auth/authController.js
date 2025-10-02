@@ -13,7 +13,29 @@ const Expression = require("./expressionSchema");
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+
+
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ["image/jpeg", "image/png"]; 
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true); // accept the file
+  } else {
+    cb(new Error("Only .jpg and .png formats are allowed!"), false);
+  }
+};
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+});
+
+router.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError || err.message.includes("Only")) {
+    return res.status(400).json({ success: false, error: err.message });
+  }
+  next(err);
+});
 
 router.use(bodyParser.urlencoded({ extended: true }));
 router.use(bodyParser.json());
@@ -227,7 +249,7 @@ router.get("/vehicledetails/:id", async(req, res) => {
 
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password, role, phone, city, created_at, updated_at } = req.body;
+    const { name, email, password, role, phone, city, avatar_url, created_at, updated_at } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -246,6 +268,7 @@ router.post("/signup", async (req, res) => {
       role: role || "Admin",
       phone,
       city,
+      avatar_url,
       is_blocked: false,
       created_at,
       updated_at,
