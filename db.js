@@ -24,7 +24,7 @@ async function seedAdmin() {
       });
 
       await adminUser.save();
-      console.log("✅ Admin user seeded successfully");
+      console.log("Admin user seeded successfully");
     } else {
       existingAdmin.username = "Admin";
       existingAdmin.password = hashedPassword;
@@ -35,10 +35,10 @@ async function seedAdmin() {
       existingAdmin.updated_at = new Date();
 
       await existingAdmin.save();
-      console.log("🔄 Admin user updated successfully");
+      console.log("Admin user updated successfully");
     }
   } catch (err) {
-    console.error("❌ Error seeding admin:", err);
+    console.error("Error seeding admin:", err);
   }
 }
 
@@ -47,7 +47,7 @@ async function connectDB() {
     useNewUrlParser: true,
     useUnifiedTopology: true
   });
-  console.log("📦 MongoDB connected");
+  console.log("MongoDB connected");
 
   // Call seed function after DB is ready
   await seedAdmin();
