@@ -7,6 +7,9 @@ app.use(cors());
 const AuthController = require ('./auth/authController');
 app.use('/api/auth',AuthController);
 
+const connectDB = require("./db");
+connectDB();
+
 app.listen(port,()=>{
     console.log(`Server is running on port ${port}`)
 })

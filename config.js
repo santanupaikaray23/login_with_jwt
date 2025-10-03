@@ -1,3 +1,3 @@
 module.exports={
-    'secert':'supersecert'
+    'secret':'supersecret'
 }

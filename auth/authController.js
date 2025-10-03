@@ -32,8 +32,8 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
 });
 
-router.use(bodyParser.urlencoded({ extended: true }));
-router.use(bodyParser.json());
+router.use(bodyParser.json({ limit: '10mb' })); // for JSON bodies
+router.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 router.get("/users", async(req, res) => {
     try {
@@ -173,18 +173,14 @@ router.post("/addExpressions", authMiddleware, async (req, res) => {
 router.put("/expressions/:id", authMiddleware, async (req, res) => {
   try {
     const vehicleId = req.params.id;
-    // const buyer_id = req.user._id; // logged in user
-
     const {
       status,
     } = req.body;
 
     console.log('vehicleId:', vehicleId, status);
-    // Find existing expression
-    const existingExpression = await Expression.findOne({
+      const existingExpression = await Expression.findOne({
       listing_id: vehicleId,
-       // ensure buyer can only update their own expression
-    });
+      });
 
     if (!existingExpression) {
       return res.status(404).json({ message: "No expression found with that ID for this buyer" });
@@ -192,7 +188,6 @@ router.put("/expressions/:id", authMiddleware, async (req, res) => {
 
     console.log("Existing Expression:", existingExpression);
 
-    // Update expression
     const updatedExpression = await Expression.findByIdAndUpdate(
      existingExpression._id,
       {
@@ -244,7 +239,7 @@ router.get("/vehicledetails/:id", async(req, res) => {
 
 router.post("/signup", async (req, res) => {
   try {
-    const { name, email, password, role, phone, city, avatar_url, created_at, updated_at } = req.body;
+    const { username, email, password, phone,name, city, avatar_url, role } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -252,21 +247,20 @@ router.post("/signup", async (req, res) => {
       return res.status(400).json({ message: "User already registered with this email" });
     }
 
-    // Hash password
-    const hashpassword = bcrypt.hashSync(password, 8);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Create new user
     const newUser = new User({
-      name,
+      username, 
       email,
-      password: hashpassword,
-      role: role || "Admin",
+      password: hashedPassword,
+      role, 
+      name, 
       phone,
       city,
-      avatar_url,
+      avatar_url: avatar_url || "",
       is_blocked: false,
-      created_at,
-      updated_at,
+      created_at: new Date(),
+      updated_at: new Date()
     });
 
     await newUser.save();
@@ -296,7 +290,7 @@ router.post("/login", (req, res) => {
         const passIsValid = bcrypt.compareSync(req.body.password, user.password);
         if (!passIsValid)
             return res.status(401).send({ auth: false, message: "Invalid password" });
-        const token = jwt.sign({ id: user._id, role: user.role }, config.secert, {
+        const token = jwt.sign({ id: user._id, role: user.role }, config.secret, {
             expiresIn: 86400,
         });
         res.status(200).send({
@@ -311,7 +305,7 @@ router.post("/login", (req, res) => {
 router.get("/userInfo", (req, res) => {
     var token = req.headers["x-access-token"];
     if (!token) return res.send({ auth: false, token: "No Token Provided" });
-    jwt.verify(token, config.secert, (err, user) => {
+    jwt.verify(token, config.secret, (err, user) => {
         if (err) return res.send({ auth: false, token: "Invalid Token" });
         User.findById(user.id, (err, result) => {
             res.send(result);
@@ -733,118 +727,6 @@ router.put(
       res.status(500).send(err.message);
     }
   })
-// router.put(
-//   "/updatevehicledetail/:id",
-//   upload.array("images", 5),
-//   async (req, res) => {
-//     try {
-//       console.log("Update Body fields:", req.body);
-//       console.log("Update Files:", req.files);
-
-//       const vehicleId = req.params.id;
-//       if (!vehicleId) {
-//         return res.status(400).json({ success: false, error: "Vehicle ID is required." });
-//       }
-
-//       // Fetch existing vehicle to preserve some fields (like images, status if needed)
-//       const existingVehicle = await Vehicledetail.findById(vehicleId);
-//       if (!existingVehicle) {
-//         return res.status(404).json({ success: false, error: "Vehicle not found." });
-//       }
-
-//       // Build updated data object
-//       let updatedData = {
-//         title: req.body.title?.trim() || existingVehicle.title,
-//         make: req.body.make?.trim() || existingVehicle.make,
-//         model: req.body.model?.trim() || existingVehicle.model,
-//         variant: req.body.variant || existingVehicle.variant,
-//         year: req.body.year ? parseInt(req.body.year, 10) : existingVehicle.year,
-//         fueltype: req.body.fueltype || existingVehicle.fueltype,
-//         transmission: req.body.transmission || existingVehicle.transmission,
-//         ownercount: req.body.ownercount ? parseInt(req.body.ownercount, 10) : existingVehicle.ownercount,
-//         registrationstate: req.body.registrationstate || existingVehicle.registrationstate,
-//         price: req.body.price ? parseFloat(req.body.price) : existingVehicle.price,
-//         description: req.body.description || existingVehicle.description,
-//         locationcity: req.body.locationcity || existingVehicle.locationcity,
-//         localpincode: req.body.localpincode || existingVehicle.localpincode,
-//         mileage_km: req.body.mileage_km || existingVehicle.mileage_km,
-//         updated_at: new Date(),
-//         status: req.body.status || existingVehicle.status,  // preserve old if empty
-//       };
-
-//       // Optional: Validate critical fields if passed (like in POST)
-//       if (req.body.year) {
-//         const year = parseInt(req.body.year, 10);
-//         if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-//           return res.status(400).json({ success: false, error: "Invalid year provided." });
-//         }
-//       }
-
-//       if (req.body.price) {
-//         const price = parseFloat(req.body.price);
-//         if (isNaN(price) || price <= 0) {
-//           return res.status(400).json({ success: false, error: "Price must be a positive number." });
-//         }
-//       }
-
-//       if (req.body.ownercount) {
-//         const ownercount = parseInt(req.body.ownercount, 10);
-//         if (isNaN(ownercount) || ownercount <= 0) {
-//           return res.status(400).json({
-//             success: false,
-//             error: "Owner count must be greater than 0.",
-//           });
-//         }
-//       }
-
-//       if (req.body.localpincode) {
-//         const pincodePattern = /^[0-9]{6}$/;
-//         if (!pincodePattern.test(req.body.localpincode)) {
-//           return res
-//             .status(400)
-//             .json({ success: false, error: "Pincode must be exactly 6 digits." });
-//         }
-//       }
-
-//       if (req.body.fueltype) {
-//         const validFuelTypes = ["Petrol", "Diesel", "Electric"];
-//         if (!validFuelTypes.includes(req.body.fueltype)) {
-//           return res.status(400).json({ success: false, error: "Invalid fuel type." });
-//         }
-//       }
-
-//       if (req.body.transmission) {
-//         const validTransmissions = ["Automatic", "Manual", "Electric"];
-//         if (!validTransmissions.includes(req.body.transmission)) {
-//           return res.status(400).json({ success: false, error: "Invalid transmission type." });
-//         }
-//       }
-
-//       // Handle new uploaded images (if any)
-//       if (req.files && req.files.length > 0) {
-//         updatedData.images = req.files.map((f) => ({
-//           filename: f.originalname,
-//           mimetype: f.mimetype,
-//           data: f.buffer.toString("base64"),
-//         }));
-//       } else {
-//         updatedData.images = existingVehicle.images; // keep old images
-//       }
-
-//       // Update document
-//       const updatedVehicle = await Vehicledetail.findByIdAndUpdate(
-//         vehicleId,
-//         updatedData,
-//         { new: true } // return updated doc
-//       );
-
-//       res.json({ success: true, vehicle: updatedVehicle });
-//     } catch (err) {
-//       console.error("Error updating vehicle:", err);
-//       res.status(500).json({ success: false, error: err.message });
-//     }
-//   }
-// );
 
 router.put(
     "/deactivatevehicledetail/:id",
