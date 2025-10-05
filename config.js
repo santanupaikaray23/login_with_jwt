@@ -1,3 +1,3 @@
-module.exports={
-    'secret':'supersecret'
-}
+module.exports = {
+  secret: process.env.JWT_SECRET || 'supersecret'
+};

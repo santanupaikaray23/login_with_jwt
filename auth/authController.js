@@ -8,7 +8,7 @@ const User = require("./userSchema");
 const Vehicledetail = require("./vehicleSchema");
 const AdminAudit = require("./adminAuditSchema");
 const authMiddleware = require("../middleware/authMiddleware");
-const Expression = require("./expressionSchema");
+const Expression = require("./inquirySchema");
 
 const multer = require("multer");
 
@@ -272,36 +272,57 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-router.post("/login", (req, res) => {
-    User.findOne({ email: req.body.email }, (err, user) => {
-        if (user && user.is_blocked == "true") {
-            return res
-                .status(400)
-                .send({ auth: false, message: "This user is blocked by admin" });
-        }
-        if (err)
-            return res
-                .status(500)
-                .send({ auth: false, message: "Error While Login" });
-        if (!user)
-            return res
-                .status(404)
-                .send({ auth: false, message: "No User Found! Register First" });
-        const passIsValid = bcrypt.compareSync(req.body.password, user.password);
-        if (!passIsValid)
-            return res.status(401).send({ auth: false, message: "Invalid password" });
-        const token = jwt.sign({ id: user._id, role: user.role }, config.secret, {
-            expiresIn: 86400,
-        });
-        res.status(200).send({
-            auth: true,
-            token: token,
-            user: {
-                role: user.role,
-            },
-        });
+router.post("/login", async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      return res.status(404).send({
+        auth: false,
+        message: "No User Found! Register First",
+      });
+    }
+
+    if (user.is_blocked === "true") {
+      return res.status(400).send({
+        auth: false,
+        message: "This user is blocked by admin",
+      });
+    }
+
+    const passIsValid = bcrypt.compareSync(req.body.password, user.password);
+
+    if (!passIsValid) {
+      return res.status(401).send({
+        auth: false,
+        message: "Invalid password",
+      });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      config.secret, 
+      { expiresIn: 86400 }
+    );
+
+    return res.status(200).send({
+      auth: true,
+      token,
+      user: {
+        role: user.role,
+        email: user.email,
+        id: user._id,
+      },
     });
+  } catch (err) {
+    console.error("Login error:", err.message);
+    return res.status(500).send({
+      auth: false,
+      message: "Error While Login",
+    });
+  }
 });
+
 router.get("/userInfo", (req, res) => {
     var token = req.headers["x-access-token"];
     if (!token) return res.send({ auth: false, token: "No Token Provided" });
