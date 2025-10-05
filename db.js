@@ -49,7 +49,6 @@ async function connectDB() {
   });
   console.log("MongoDB connected");
 
-  // Call seed function after DB is ready
   await seedAdmin();
 }
 

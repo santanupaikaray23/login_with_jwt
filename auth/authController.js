@@ -101,7 +101,7 @@ router.get("/adminAudit", async(req, res) => {
 
 router.get("/adminAudit/:id", async (req, res) => {
     try {
-        const audits = await AdminAudit.find({ target_id: req.params.id })
+        const audits = await AdminAudit.find({target_id: req.params.id})
 
         if (audits.length === 0) {
             return res.status(404).json({ error: "No audits found for this target" });
