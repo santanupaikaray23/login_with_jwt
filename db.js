@@ -16,7 +16,7 @@ async function seedAdmin() {
         password: hashedPassword,
         role: "admin",
         phone: "9999999999",
-        avatar_url: "",
+        avatar_url: "https://i.ibb.co/wr2b0RZh/admin-icon-vector.jpg",
         city: "khordha",
         is_blocked: false,   
         created_at: new Date(),
@@ -30,6 +30,7 @@ async function seedAdmin() {
       existingAdmin.password = hashedPassword;
       existingAdmin.role = "admin";
       existingAdmin.phone = "9999999999";
+      existingAdmin.avatar_url = "https://i.ibb.co/wr2b0RZh/admin-icon-vector.jpg";
       existingAdmin.city = "khordha";
       existingAdmin.is_blocked = false;
       existingAdmin.updated_at = new Date();

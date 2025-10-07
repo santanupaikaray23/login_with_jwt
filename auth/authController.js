@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require("express");
 const router = express.Router();
 const bodyParser = require("body-parser");
@@ -9,6 +10,7 @@ const Vehicledetail = require("./vehicleSchema");
 const AdminAudit = require("./adminAuditSchema");
 const authMiddleware = require("../middleware/authMiddleware");
 const Expression = require("./inquirySchema");
+const nodemailer = require("nodemailer");
 
 const multer = require("multer");
 
@@ -929,7 +931,7 @@ router.delete("/deletevehicledetail/:id", async(req, res) => {
 router.get("/buyerStatus", async (req, res) => {
   try {
     const expressions = await Expression.find()
-      .populate("buyer_id"); // populates buyer details from User model
+      .populate("buyer_id"); 
 
     res.json(expressions);
   } catch (err) {
@@ -950,6 +952,67 @@ router.get("/buyerStatus/:id", async (req, res) => {
   } catch (err) {
     console.error("Error fetching buyer status by ID:", err);
     res.status(500).json({ error: "Server error while fetching buyer status" });
+  }
+});
+
+router.post('/forgotpassword', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).send('User not found');
+        const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+        const transporter = nodemailer.createTransport({
+            service: 'gmail', 
+            auth: {
+                user: 'santanupaikaray1996@gmail.com',
+                pass: 'ofeo xnql hagr fpzk', 
+            },
+        });
+        const resetLink = `http://localhost:4200/resetpassword?token=${resetToken}`;
+        const mailOptions = {
+            from: 'santanupaikaray1996@gmail.com',
+            to: email,
+            subject: 'Password Reset',
+            text: `Click on this link to reset your password: ${resetLink}`,
+        };
+        await transporter.sendMail(mailOptions);
+        res.status(200).json({ message:'Password reset email sent successfully'});
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({message:'Internal Server Error'});
+    }
+});
+
+router.post('/resetpassword', async (req, res) => {
+  const { token, newPassword } = req.body;
+  try {
+    const decoded = jwt.verify(token, process.env.RESET_PASSWORD_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    user.password = bcrypt.hashSync(newPassword, 8);
+    await user.save();
+    res.status(200).json({ message: 'Password reset successful' });
+  } catch (err) {
+    console.error(err);
+    if (err.name === 'TokenExpiredError') {
+      return res.status(400).json({ message: 'Reset token has expired' });
+    }
+    res.status(400).json({ message: 'Invalid token' });
+  }
+});
+
+router.get('/resetpassword', async (req, res) => {
+  const { token } = req.query;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    res.status(200).json({ message: 'Token is valid', id: decoded.id });
+  } catch (err) {
+    console.error(err);
+    if (err.name === 'TokenExpiredError') {
+      return res.status(400).json({ message: 'Reset token has expired' });
+    }
+    res.status(400).json({ message: 'Invalid token' });
   }
 });
 
