@@ -11,7 +11,6 @@ const AdminAudit = require("./adminAuditSchema");
 const authMiddleware = require("../middleware/authMiddleware");
 const Expression = require("./inquirySchema");
 const nodemailer = require("nodemailer");
-
 const multer = require("multer");
 
 const storage = multer.memoryStorage();
@@ -973,7 +972,12 @@ router.post('/forgotpassword', async (req, res) => {
             from: 'santanupaikaray1996@gmail.com',
             to: email,
             subject: 'Password Reset',
-            text: `Click on this link to reset your password: ${resetLink}`,
+            text: `Hi,
+
+Click on this link to reset your password: ${resetLink}
+
+Thanks & Regards,
+Santanu Paikaray`,
         };
         await transporter.sendMail(mailOptions);
         res.status(200).json({ message:'Password reset email sent successfully'});
