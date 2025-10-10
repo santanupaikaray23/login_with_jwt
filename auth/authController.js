@@ -287,7 +287,7 @@ router.post("/login", async (req, res) => {
     if (user.is_blocked === "true") {
       return res.status(400).send({
         auth: false,
-        message: "This user is blocked by admin",
+        message: "You have blocked by admin",
       });
     }
 
