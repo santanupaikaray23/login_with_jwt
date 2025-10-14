@@ -44,7 +44,7 @@ async function seedAdmin() {
 }
 
 async function connectDB() {
-  await mongoose.connect("mongodb://127.0.0.1:27017/usedvehicles", {
+  await mongoose.connect("mongodb+srv://portfolio:portfolio1996@cluster0.yf62c.mongodb.net/usedvehicles", {
     useNewUrlParser: true,
     useUnifiedTopology: true
   });
