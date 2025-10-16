@@ -245,7 +245,7 @@ router.post("/signup", async (req, res) => {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({ message: " email already registered" });
+      return res.status(400).json({ message: "Email already registered" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -967,7 +967,7 @@ router.post('/forgotpassword', async (req, res) => {
                 pass: 'ofeo xnql hagr fpzk', 
             },
         });
-        const resetLink = `http://localhost:4200/resetpassword?token=${resetToken}`;
+        const resetLink = `https://login-with-jwt-test1.onrender.com/resetpassword?token=${resetToken}`;
         const mailOptions = {
             from: 'santanupaikaray1996@gmail.com',
             to: email,
