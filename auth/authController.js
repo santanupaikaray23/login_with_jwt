@@ -13,10 +13,10 @@ const Expression = require("./inquirySchema");
 const nodemailer = require("nodemailer");
 const multer = require("multer");
 const storage = multer.memoryStorage();
-const Brevo = require('@getbrevo/brevo');
 const app = express();
 
 app.use(express.json());
+const SibApiV3Sdk = require('sib-api-v3-sdk');
 
 const fileFilter = (req, file, cb) => {
     const allowedTypes = ["image/jpeg", "image/png"];

@@ -21,6 +21,7 @@
     "mongoose": "^6.0.8",
     "multer": "^2.0.2",
     "nodemailer": "^6.9.16",
-    "nodemon": "^2.0.15"
+    "nodemon": "^2.0.15",
+    "sib-api-v3-sdk": "^8.5.0"
   }
 }
