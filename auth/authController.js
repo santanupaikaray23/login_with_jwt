@@ -12,9 +12,13 @@ const authMiddleware = require("../middleware/authMiddleware");
 const Expression = require("./inquirySchema");
 const nodemailer = require("nodemailer");
 const multer = require("multer");
-
 const storage = multer.memoryStorage();
-
+const cors = require('cors');
+router.use(cors({
+  origin: ['https://usedvehicles.onrender.com/'], 
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
 
 const fileFilter = (req, file, cb) => {
     const allowedTypes = ["image/jpeg", "image/png"];
@@ -967,7 +971,7 @@ router.post('/forgotpassword', async (req, res) => {
                 pass: 'vhdb mnrw cahc idpt', 
             },
         });
-        const resetLink = `https://login-with-jwt-5k65.onrender.com/api/auth/resetpassword?token=${resetToken}`;
+        const resetLink = `https://usedvehicles.onrender.com/api/auth/resetpassword?token=${resetToken}`;
         const mailOptions = {
             from: 'santanupaikaray1996@gmail.com',
             to: email,
