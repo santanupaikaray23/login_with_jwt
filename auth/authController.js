@@ -967,7 +967,7 @@ router.post('/forgotpassword', async (req, res) => {
                 pass: 'vhdb mnrw cahc idpt', 
             },
         });
-        const resetLink = `https://usedvehicles.onrender.com/resetpassword?token=${resetToken}`;
+        const resetLink = `https://login-with-jwt-5k65.onrender.com/api/auth/resetpassword?token=${resetToken}`;
         const mailOptions = {
             from: 'santanupaikaray1996@gmail.com',
             to: email,
