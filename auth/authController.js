@@ -12,13 +12,15 @@ const authMiddleware = require("../middleware/authMiddleware");
 const Expression = require("./inquirySchema");
 const nodemailer = require("nodemailer");
 const multer = require("multer");
+const { required } = require('nodemon/lib/config');
 const storage = multer.memoryStorage();
-const cors = require('cors');
-router.use(cors({
-  origin: ['https://usedvehicles.onrender.com/'], 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true
-}));
+
+// const cors = require('cors');
+// router.use(cors({
+//   origin: ['https://usedvehicles.onrender.com/'], 
+//   methods: ['GET', 'POST', 'PUT', 'DELETE'],
+//   credentials: true
+// }));
 
 const fileFilter = (req, file, cb) => {
     const allowedTypes = ["image/jpeg", "image/png"];
