@@ -14,6 +14,12 @@ const nodemailer = require("nodemailer");
 const multer = require("multer");
 const storage = multer.memoryStorage();
 
+const app = express();
+
+
+app.use(express.json());
+const SibApiV3Sdk = require('sib-api-v3-sdk');
+
 
 const fileFilter = (req, file, cb) => {
     const allowedTypes = ["image/jpeg", "image/png"];
@@ -957,28 +963,45 @@ router.post('/forgotpassword', async (req, res) => {
     const { email } = req.body;
     try {
         const user = await User.findOne({ email });
+
         if (!user) return res.status(404).send('User not found');
         const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-        const transporter = nodemailer.createTransport({
-            service: 'gmail', 
-            auth: {
-                user: 'santanupaikaray1996@gmail.com',
-                pass: 'vhdb mnrw cahc idpt', 
-            },
-        });
+
+        const client = SibApiV3Sdk.ApiClient.instance;
+        client.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+
+        const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
         const resetLink = `https://usedvehicles.onrender.com/api/auth/resetpassword?token=${resetToken}`;
-        const mailOptions = {
-            from: 'santanupaikaray1996@gmail.com',
-            to: email,
-            subject: 'Password Reset',
-            text: `Hi,
 
-Click on this link to reset your password: ${resetLink}
-
-Thanks & Regards,
-Santanu Paikaray`,
+        const sendSmtpEmail = {
+        sender: { email: "santanupaikaray1996@gmail.com", name: "Santanu Paikaray" },
+        to: [{ email: email }],
+        subject: "Password Reset",
+        textContent: `Click on this link to reset your password: ${resetLink}`,
         };
-        await transporter.sendMail(mailOptions);
+
+        await apiInstance.sendTransacEmail(sendSmtpEmail);
+
+//         const transporter = nodemailer.createTransport({
+//             service: 'gmail', 
+//             auth: {
+//                 user: 'santanupaikaray1996@gmail.com',
+//                 pass: 'vhdb mnrw cahc idpt', 
+//             },
+//         });
+//         const resetLink = `https://usedvehicles.onrender.com/api/auth/resetpassword?token=${resetToken}`;
+//         const mailOptions = {
+//             from: 'santanupaikaray1996@gmail.com',
+//             to: email,
+//             subject: 'Password Reset',
+//             text: `Hi,
+
+// Click on this link to reset your password: ${resetLink}
+
+// Thanks & Regards,
+// Santanu Paikaray`,
+//         };
+//         await transporter.sendMail(mailOptions);
         res.status(200).json({ message:'Password reset email sent successfully'});
     } catch (err) {
         console.error(err);
