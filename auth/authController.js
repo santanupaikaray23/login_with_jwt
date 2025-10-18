@@ -32,7 +32,7 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter,
-  limits: { fileSize: 7 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
 });
 
 router.use(bodyParser.json({ limit: '10mb' })); // for JSON bodies
