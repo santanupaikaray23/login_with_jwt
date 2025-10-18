@@ -971,34 +971,17 @@ router.post('/forgotpassword', async (req, res) => {
         const resetLink = `https://usedvehicles.onrender.com/resetpassword?token=${resetToken}`;
 
         const sendSmtpEmail = {
-        sender: { email: "santanupaikaray1996@gmail.com", name: "Santanu Paikaray" },
+        sender: { email: "santanupaikaray1996@gmail.com", name: "Usedvehicles Team" },
         to: [{ email: email }],
         subject: "Password Reset",
-        textContent: `Click on this link to reset your password: ${resetLink}`,
+        textContent: `Hi,
+
+        Click on this link to reset your password: ${resetLink}
+
+         Thanks & Regards,
+         Usedvehicles Team `,
         };
-
         await apiInstance.sendTransacEmail(sendSmtpEmail);
-
-//         const transporter = nodemailer.createTransport({
-//             service: 'gmail', 
-//             auth: {
-//                 user: 'santanupaikaray1996@gmail.com',
-//                 pass: 'vhdb mnrw cahc idpt', 
-//             },
-//         });
-//         const resetLink = `https://usedvehicles.onrender.com/api/auth/resetpassword?token=${resetToken}`;
-//         const mailOptions = {
-//             from: 'santanupaikaray1996@gmail.com',
-//             to: email,
-//             subject: 'Password Reset',
-//             text: `Hi,
-
-// Click on this link to reset your password: ${resetLink}
-
-// Thanks & Regards,
-// Santanu Paikaray`,
-//         };
-//         await transporter.sendMail(mailOptions);
         res.status(200).json({ message:'Password reset email sent successfully'});
     } catch (err) {
         console.error(err);
