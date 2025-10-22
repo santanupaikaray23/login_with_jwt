@@ -929,16 +929,23 @@ router.delete("/deletevehicledetail/:id", async(req, res) => {
     }
 });
 
-router.get("/buyerStatus", async (req, res) => {
-  try {
-    const expressions = await Expression.find()
-      .populate("buyer_id"); 
+// router.get("/buyerStatus", async (req, res) => {
+//   try {
+//     const expressions = await Expression.find()
+//       .populate("buyer_id"); 
 
-    res.json(expressions);
-  } catch (err) {
-    console.error("Error fetching buyer statuses:", err);
-    res.status(500).json({ error: "Server error while fetching buyer statuses" });
-  }
+//     res.json(expressions);
+//   } catch (err) {
+//     console.error("Error fetching buyer statuses:", err);
+//     res.status(500).json({ error: "Server error while fetching buyer statuses" });
+//   }
+// });
+
+router.get("/buyerStatus", async (req, res) => {
+  const { productId } = req.query;
+  const q = productId ? { product_id: productId } : {};
+  const expressions = await Expression.find(q).populate("buyer_id");
+  res.json(expressions);
 });
 
 router.get("/buyerStatus/:id", async (req, res) => {
