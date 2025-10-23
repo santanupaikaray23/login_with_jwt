@@ -1,6 +1,7 @@
 var mongoose = require ('mongoose');
 
 var VehicleSchema = new mongoose.Schema({
+  sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
     vehicle_id:Number,
     seller_id:Number,
     title:String,

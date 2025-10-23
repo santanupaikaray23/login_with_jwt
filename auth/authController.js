@@ -530,10 +530,70 @@ router.get("/vehicledetails", async(req, res) => {
     }
 });
 
+// router.get("/vehicledetails/:sellerId", async (req, res) => {
+//   try {
+//     const { sellerId } = req.params;
+
+//     if (!sellerId) {
+//       return res.status(400).json({ success: false, error: "Seller ID is required." });
+//     }
+
+//     if (!vehicles || vehicles.length === 0) {
+//       return res.status(404).json({ success: false, message: "No vehicles found for this seller." });
+//     }
+
+//     res.status(200).json({ success: true, count: vehicles.length, vehicles });
+//   } catch (err) {
+//     console.error("Error fetching vehicles by sellerId:", err);
+//     res.status(500).json({ success: false, error: "Server error" });
+//   }
+// });
+
+router.get(
+  "/seller/vehicledetails",
+  authMiddleware, // ✅ Protect this route with JWT
+  async (req, res) => {
+    try {
+    //   const {  } = req.params;
+      const sellerId = req.user.id; // ✅ from token
+
+      
+
+      if (!sellerId) {
+        return res.status(400).json({
+          success: false,
+          error: "Seller ID is required.",
+        });
+      }
+
+      const vehicles = await Vehicledetail.find({ sellerId }).sort({ createdAt: -1 });
+
+      if (!vehicles || vehicles.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No vehicles found for this seller.",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        count: vehicles.length,
+        vehicles,
+      });
+    } catch (err) {
+      console.error("Error fetching vehicles by sellerId:", err);
+      res.status(500).json({
+        success: false,
+        error: "Server error",
+      });
+    }
+  }
+);
+
 router.get("/vehicledetails/:id", async(req, res) => {
     try {
         const vehicle = await Vehicledetail.findById(req.params.id);
-        res.json(vehicle);
+        res.json(vehicle);9
     } catch (err) {
         res.status(500).send(err);
     }
@@ -583,77 +643,65 @@ router.get("/vehicledetails/total", async(req, res) => {
 
 router.post(
     "/addvehicledetail",
+    authMiddleware, // Protect this route
     upload.array("images", 5),
-    async(req, res) => {
+    async (req, res) => {
         try {
+            console.log("Authenticated user:", req.user);
             console.log("Body fields:", req.body);
-            console.log("Files:", req.files);
+            const sellerId = req.user.id;
+
+            if (!sellerId) {
+                return res.status(400).json({ success: false, error: "Seller ID is required." });
+            }
+
+            // ... (rest of your validation and vehicleData code stays the same)
             const requiredFields = [
-                "title",
-                "make",
-                "model",
-                "variant",
-                "year",
-                "fueltype",
-                "transmission",
-                "ownercount",
-                "registrationstate",
-                "price",
-                "description",
-                "locationcity",
-                "localpincode",
-                "mileage_km",
-                "created_at",
-                "updated_at",
-                "status"
+                "title", "make", "model", "variant", "year", "fueltype",
+                "transmission", "ownercount", "registrationstate", "price",
+                "description", "locationcity", "localpincode", "mileage_km",
+                "created_at", "updated_at", "status"
             ];
+
             for (const field of requiredFields) {
                 if (!req.body[field] || req.body[field].toString().trim() === "") {
-                    return res
-                        .status(400)
-                        .json({ success: false, error: `${field} is required.` });
+                    return res.status(400).json({ success: false, error: `${field} is required.` });
                 }
             }
+
             const year = parseInt(req.body.year, 10);
             if (isNaN(year) || year < 1900 || year > new Date().getFullYear()) {
-                return res
-                    .status(400)
-                    .json({ success: false, error: "Invalid year provided." });
+                return res.status(400).json({ success: false, error: "Invalid year provided." });
             }
+
             const price = parseFloat(req.body.price);
             if (isNaN(price) || price <= 0) {
-                return res
-                    .status(400)
-                    .json({ success: false, error: "Price must be a positive number." });
+                return res.status(400).json({ success: false, error: "Price must be positive." });
             }
+
             const ownercount = parseInt(req.body.ownercount, 10);
             if (isNaN(ownercount) || ownercount <= 0) {
-                return res
-                    .status(400)
-                    .json({
-                        success: false,
-                        error: "Owner count must be greater than 0.",
-                    });
+                return res.status(400).json({ success: false, error: "Owner count must be > 0." });
             }
+
             const pincodePattern = /^[0-9]{6}$/;
             if (!pincodePattern.test(req.body.localpincode)) {
-                return res
-                    .status(400)
-                    .json({ success: false, error: "Pincode must be exactly 6 digits." });
+                return res.status(400).json({ success: false, error: "Pincode must be 6 digits." });
             }
+
             const validFuelTypes = ["Petrol", "Diesel", "Electric"];
-            if (!validFuelTypes.includes(req.body.fueltype)) {
-                return res
-                    .status(400)
-                    .json({ success: false, error: "Invalid fuel type." });
-            }
             const validTransmissions = ["Automatic", "Manual", "Electric"];
-            if (!validTransmissions.includes(req.body.transmission)) {
-                return res
-                    .status(400)
-                    .json({ success: false, error: "Invalid transmission type." });
+
+            if (!validFuelTypes.includes(req.body.fueltype)) {
+                return res.status(400).json({ success: false, error: "Invalid fuel type." });
             }
+
+            if (!validTransmissions.includes(req.body.transmission)) {
+                return res.status(400).json({ success: false, error: "Invalid transmission type." });
+            }
+
             const vehicleData = {
+                sellerId, // ✅ taken from JWT middleware
                 title: req.body.title.trim(),
                 make: req.body.make.trim(),
                 model: req.body.model.trim(),
