@@ -989,12 +989,12 @@ router.delete("/deletevehicledetail/:id", async(req, res) => {
 //   }
 // });
 
-router.get("/buyerStatus", async (req, res) => {
-  const { productId } = req.query;
-  const q = productId ? { product_id: productId } : {};
-  const expressions = await Expression.find(q).populate("buyer_id");
-  res.json(expressions);
-});
+// router.get("/buyerStatus", async (req, res) => {
+//   const { productId } = req.query;
+//   const q = productId ? { product_id: productId } : {};
+//   const expressions = await Expression.find(q).populate("buyer_id");
+//   res.json(expressions);
+// });
 
 router.get("/buyerStatus/:id", async (req, res) => {
   try {

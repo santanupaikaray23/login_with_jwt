@@ -1,6 +1,7 @@
 var mongoose = require("mongoose");
 
 var ExpressionSchema = new mongoose.Schema({
+   sellerId: { type: mongoose.Schema.Types.ObjectId, ref: "Seller", required: true },
   buyer_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
