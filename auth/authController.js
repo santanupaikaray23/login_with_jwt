@@ -24,7 +24,7 @@ const fileFilter = (req, file, cb) => {
         cb(null, true);
     } else {
         const error = new Error("Only .jpg and .png formats are allowed!");
-        error.status = 400; // optional
+        error.status = 400; 
         cb(error, false);
     }
 };
@@ -32,10 +32,10 @@ const fileFilter = (req, file, cb) => {
 const upload = multer({
   storage: multer.memoryStorage(),
   fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 5 * 1024 * 1024 }, 
 });
 
-router.use(bodyParser.json({ limit: '10mb' })); // for JSON bodies
+router.use(bodyParser.json({ limit: '10mb' })); 
 router.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 
 router.get("/users", async(req, res) => {
@@ -143,16 +143,14 @@ router.post("/addExpressions", authMiddleware, async (req, res) => {
       status,
     } = req.body;
 
-    // Validate required fields
     if (!buyer_id || !listing_id || !message || !contact_phone) {
       return res.status(400).json({
         error: "buyer_id, listing_id, message, and contact_phone are required.",
       });
     }
 
-    // Update if exists, else create new
     const updatedExpression = await Expression.findOneAndUpdate(
-      { buyer_id, listing_id }, // search condition
+      { buyer_id, listing_id }, 
       {
         $set: {
           vehicle_name,
@@ -163,7 +161,7 @@ router.post("/addExpressions", authMiddleware, async (req, res) => {
           status,
         },
       },
-      { new: true, upsert: true } // return updated doc, create if not found
+      { new: true, upsert: true } 
     );
 
     res.status(200).json(updatedExpression);
@@ -530,34 +528,12 @@ router.get("/vehicledetails", async(req, res) => {
     }
 });
 
-// router.get("/vehicledetails/:sellerId", async (req, res) => {
-//   try {
-//     const { sellerId } = req.params;
-
-//     if (!sellerId) {
-//       return res.status(400).json({ success: false, error: "Seller ID is required." });
-//     }
-
-//     if (!vehicles || vehicles.length === 0) {
-//       return res.status(404).json({ success: false, message: "No vehicles found for this seller." });
-//     }
-
-//     res.status(200).json({ success: true, count: vehicles.length, vehicles });
-//   } catch (err) {
-//     console.error("Error fetching vehicles by sellerId:", err);
-//     res.status(500).json({ success: false, error: "Server error" });
-//   }
-// });
-
 router.get(
   "/seller/vehicledetails",
   authMiddleware, // ✅ Protect this route with JWT
   async (req, res) => {
     try {
-    //   const {  } = req.params;
-      const sellerId = req.user.id; // ✅ from token
-
-      
+      const sellerId = req.user.id; 
 
       if (!sellerId) {
         return res.status(400).json({
@@ -643,7 +619,7 @@ router.get("/vehicledetails/total", async(req, res) => {
 
 router.post(
     "/addvehicledetail",
-    authMiddleware, // Protect this route
+    authMiddleware, 
     upload.array("images", 5),
     async (req, res) => {
         try {
@@ -655,7 +631,6 @@ router.post(
                 return res.status(400).json({ success: false, error: "Seller ID is required." });
             }
 
-            // ... (rest of your validation and vehicleData code stays the same)
             const requiredFields = [
                 "title", "make", "model", "variant", "year", "fueltype",
                 "transmission", "ownercount", "registrationstate", "price",
@@ -976,25 +951,6 @@ router.delete("/deletevehicledetail/:id", async(req, res) => {
         res.status(500).json({"error":err.message});
     }
 });
-
-// router.get("/buyerStatus", async (req, res) => {
-//   try {
-//     const expressions = await Expression.find()
-//       .populate("buyer_id"); 
-
-//     res.json(expressions);
-//   } catch (err) {
-//     console.error("Error fetching buyer statuses:", err);
-//     res.status(500).json({ error: "Server error while fetching buyer statuses" });
-//   }
-// });
-
-// router.get("/buyerStatus", async (req, res) => {
-//   const { productId } = req.query;
-//   const q = productId ? { product_id: productId } : {};
-//   const expressions = await Expression.find(q).populate("buyer_id");
-//   res.json(expressions);
-// });
 
 router.get("/buyerStatus/:id", async (req, res) => {
   try {
