@@ -173,41 +173,26 @@ router.post("/addExpressions", authMiddleware, async (req, res) => {
 
 router.put("/expressions/:id", authMiddleware, async (req, res) => {
   try {
-    const vehicleId = req.params.id;
-    const {
-      status,
-    } = req.body;
+    const expressionId = req.params.id;
+    const { status } = req.body;
 
-    console.log('vehicleId:', vehicleId, status);
-      const existingExpression = await Expression.findOne({
-      listing_id: vehicleId,
-      });
-
-    if (!existingExpression) {
-      return res.status(404).json({ message: "No expression found with that ID for this buyer" });
-    }
-
-    console.log("Existing Expression:", existingExpression);
+    console.log('Received:', expressionId, status);
 
     const updatedExpression = await Expression.findByIdAndUpdate(
-     existingExpression._id,
-      {
-        $set: {
-            
-          status
-          
-        },
-      },
+      expressionId,                   
+      { $set: { status } },
       { new: true }
     );
 
     if (!updatedExpression) {
-      return res.status(500).json({ message: "Failed to update expression" });
+      return res.status(404).json({ message: "No expression found with that ID" });
     }
 
+    console.log('Updated Expression:', updatedExpression);
     res.json({ success: true, data: updatedExpression });
+
   } catch (err) {
-    console.error("Error updating expression:", err);
+    console.error("❌ Error updating expression:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -280,7 +265,7 @@ router.post("/login", async (req, res) => {
     if (!user) {
       return res.status(404).send({
         auth: false,
-        message: "No User Found! Register First",
+        message: "No User Found! Sing up First",
       });
     }
 
