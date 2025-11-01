@@ -192,7 +192,7 @@ router.put("/expressions/:id", authMiddleware, async (req, res) => {
     res.json({ success: true, data: updatedExpression });
 
   } catch (err) {
-    console.error("❌ Error updating expression:", err);
+    console.error("Error updating expression:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -227,7 +227,6 @@ router.post("/signup", async (req, res) => {
   try {
     const { username, email, password, phone,name, city, avatar_url, role } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already registered with this email" });
@@ -319,6 +318,7 @@ router.get("/userInfo", (req, res) => {
         });
     });
 });
+
 router.post("/logout", (req, res) => {
     const token = req.headers["x-access-token"] || req.body.token;
     if (token) {
@@ -515,7 +515,7 @@ router.get("/vehicledetails", async(req, res) => {
 
 router.get(
   "/seller/vehicledetails",
-  authMiddleware, // ✅ Protect this route with JWT
+  authMiddleware, 
   async (req, res) => {
     try {
       const sellerId = req.user.id; 
@@ -661,7 +661,7 @@ router.post(
             }
 
             const vehicleData = {
-                sellerId, // ✅ taken from JWT middleware
+                sellerId, 
                 title: req.body.title.trim(),
                 make: req.body.make.trim(),
                 model: req.body.model.trim(),
@@ -964,7 +964,7 @@ router.post('/forgotpassword', async (req, res) => {
         client.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
 
         const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-        const resetLink = `https://usedvehicles.onrender.com/resetpassword?token=${resetToken}`;
+        const resetLink = `https://scootywali.onrender.com/resetpassword?token=${resetToken}`;
 
         const sendSmtpEmail = {
         sender: { email: "santanupaikaray1996@gmail.com", name: "Usedvehicles Team" },
