@@ -975,7 +975,7 @@ router.post('/forgotpassword', async (req, res) => {
         Click on this link to reset your password: ${resetLink}
 
          Thanks & Regards,
-         Usedvehicles Team `,
+         Scootwali Team `,
         };
         await apiInstance.sendTransacEmail(sendSmtpEmail);
         res.status(200).json({ message:'Password reset email sent successfully'});
