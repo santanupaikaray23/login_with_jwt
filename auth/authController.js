@@ -964,7 +964,7 @@ router.post('/forgotpassword', async (req, res) => {
         client.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
 
         const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-        const resetLink = `https://scootywali.vercel.app/resetpassword?token=${resetToken}`;
+        const resetLink = `https://usedvehicles.vercel.app/resetpassword?token=${resetToken}`;
 
         const sendSmtpEmail = {
         sender: { email: "santanupaikaray1996@gmail.com", name: "Usedvehicles Team" },
@@ -975,7 +975,7 @@ router.post('/forgotpassword', async (req, res) => {
         Click on this link to reset your password: ${resetLink}
 
          Thanks & Regards,
-         Scootwali Team `,
+         Usedvehicles Team `,
         };
         await apiInstance.sendTransacEmail(sendSmtpEmail);
         res.status(200).json({ message:'Password reset email sent successfully'});
