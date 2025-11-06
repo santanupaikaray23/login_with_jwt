@@ -43,14 +43,27 @@ async function seedAdmin() {
   }
 }
 
-async function connectDB() {
-  await mongoose.connect("mongodb+srv://portfolio:portfolio1996@cluster0.yf62c.mongodb.net/usedvehicles", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-  });
-  console.log("MongoDB connected");
+// async function connectDB() {
+//   await mongoose.connect("mongodb+srv://portfolio:portfolio1996@cluster0.yf62c.mongodb.net/usedvehicles", {
+//     useNewUrlParser: true,
+//     useUnifiedTopology: true
+//   });
+//   console.log("MongoDB connected");
 
-  await seedAdmin();
+//   await seedAdmin();
+// }
+async function connectDB() {
+  try {
+    await mongoose.connect(process.env.MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log("MongoDB connected");
+    await seedAdmin();
+  } catch (error) {
+    console.error("Database connection failed:", error.message);
+    process.exit(1); // exit process to avoid undefined state
+  }
 }
 
 module.exports = connectDB;
